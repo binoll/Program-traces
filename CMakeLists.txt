@@ -3,4 +3,9 @@ project(Program_traces)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(Program_traces main.cpp)
+add_executable(
+        Program_traces
+        main.cpp
+        ntfs/file_analyzer.cpp
+        ntfs/file_system_manager.cpp
+)

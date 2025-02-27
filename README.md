@@ -7,5 +7,5 @@ from the Windows operating system
 
 ## Dependencies
 ```bash
-sudo apt-get install ntfs-3g-dev
+sudo apt-get install ntfs-3g ntfs-3g-dev
 ```
