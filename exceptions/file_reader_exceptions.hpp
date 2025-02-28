@@ -11,7 +11,7 @@ class FileException : public std::runtime_error {
                            std::system_category().message(error_code) + ")"),
         error_code_(error_code) {}
 
-  int code() const noexcept { return error_code_; }
+  [[nodiscard]] int code() const noexcept { return error_code_; }
 
  private:
   int error_code_;
