@@ -100,7 +100,7 @@ void FileReader::check_stream_state(const std::ifstream& stream,
   }
 }
 
-void FileReader::safe_io_operation(std::function<void()> op,
+void FileReader::safe_io_operation(std::function<void()>&& op,
                                    const std::string& context) const {
   try {
     check_stream_state(handle_->stream, context);

@@ -30,7 +30,7 @@ class FileReader {
 
  private:
   void check_stream_state(const std::ifstream&, const std::string&) const;
-  void safe_io_operation(std::function<void()>, const std::string&) const;
+  void safe_io_operation(std::function<void()>&&, const std::string&) const;
 
   std::string file_path_;
   std::unique_ptr<FileHandle> handle_;

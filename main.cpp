@@ -3,18 +3,8 @@
 #include "exceptions/file_reader_exceptions.hpp"
 #include "file_reader/file_reader.hpp"
 
-void print_usage(const char* program_name) {
-  std::cerr << "NTFS File Reader\n"
-            << "Usage: " << program_name << " <file_path>\n\n"
-            << "Ensure:\n"
-            << "1. NTFS drive is properly mounted\n"
-            << "2. You have read permissions\n"
-            << "3. Path uses Linux-style separators (/)\n";
-}
-
 int main(int argc, char* argv[]) {
   if (argc != 2) {
-    print_usage(argv[0]);
     return 1;
   }
 
