@@ -1,37 +1,37 @@
 #pragma once
 
 #include <fstream>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
-struct FileHandle {
+struct Handle {
   std::ifstream stream;
-  std::mutex mtx;
-  std::streampos last_pos = 0;
+  mutable std::mutex mtx;
+  std::streampos pos = 0;
 };
 
 class FileReader {
  public:
-  explicit FileReader(std::string path);
+  explicit FileReader(std::string path, std::ios::openmode);
+  ~FileReader();
 
-  void open(std::ios::openmode) const;
-  [[nodiscard]] std::string read() const;
-  [[nodiscard]] std::string read_chunk(std::streamsize) const;
-  void set_pos(std::streampos pos) const;
-  [[nodiscard]] std::streampos get_pos() const;
-  void close() const noexcept;
+  FileReader(const FileReader&) = delete;
+  FileReader& operator=(const FileReader&) = delete;
 
-  [[nodiscard]] bool is_open() const noexcept;
+  [[nodiscard]] std::vector<char> read() const;
+  [[nodiscard]] std::vector<char> read_chunk(std::streamsize) const;
+  void seek(std::streampos) const;
+  [[nodiscard]] std::streampos tell() const;
+
   [[nodiscard]] const std::string& path() const noexcept;
-
-  ~FileReader() noexcept;
+  [[nodiscard]] bool is_open() const noexcept;
 
  private:
-  void check_stream_state(const std::ifstream&, const std::string&) const;
-  void safe_io_operation(std::function<void()>&&, const std::string&) const;
+  void validate_stream() const;
+  void handle_io_error(const std::string&, int) const;
 
   std::string file_path_;
-  std::unique_ptr<FileHandle> handle_;
+  std::unique_ptr<Handle> handle_;
 };
