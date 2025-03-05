@@ -1,30 +1,51 @@
+#include <iomanip>
 #include <iostream>
-
-#include "exceptions/file_reader_exceptions.hpp"
 #include "file_reader/file_reader.hpp"
+#include "file_reader/file_reader_exceptions.hpp"
 
-int main(int argc, char* argv[]) {
+void process_chunk(const std::vector<char>& chunk, size_t& total_size) {
+  total_size += chunk.size();
+}
+
+int main(const int argc, char* argv[]) {
   if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " <disk_path>\n";
     return 1;
   }
 
-  try {
-    FileReader reader(argv[1]);
-    reader.open(std::ios::in);
+  const std::string disk_path(argv[1]);
+  size_t total_bytes = 0;
+  size_t chunk_counter = 0;
 
-    if (reader.is_open()) {
-      std::cout << "Successfully opened: " << reader.path() << "\n";
-      std::cout << "File content:\n" << reader.read() << "\n";
+  try {
+    FileReader reader(disk_path, std::ios::binary);
+
+    std::cout << "Analyzing disk: " << disk_path << "\n";
+    std::cout << std::setw(6) << "Chunk" << std::setw(12) << "Size (MB)"
+              << std::setw(15) << "Total (MB)\n";
+
+    while (true) {
+      auto chunk = reader.read_chunk(1024 * 1024);
+      if (chunk.empty())
+        break;
+
+      process_chunk(chunk, total_bytes);
+
+      // Вывод прогресса каждые 100 чанков
+      if (++chunk_counter % 100 == 0) {
+        std::cout << std::setw(6) << chunk_counter << std::setw(12)
+                  << chunk.size() / 1048576.0 << std::setw(15)
+                  << total_bytes / 1048576.0 << "\n";
+      }
     }
-  } catch (const FileOpenException& e) {
-    std::cerr << "Critical error: " << e.what() << "\n";
+
+    std::cout << "\nAnalysis complete!\n"
+              << "Total processed: " << total_bytes << " bytes (" << std::fixed
+              << std::setprecision(2) << total_bytes / 1048576.0 << " MB)\n";
+
+  } catch (const FileException& e) {
+    std::cerr << "Error: " << e.what() << "\n";
     return 2;
-  } catch (const FileReadException& e) {
-    std::cerr << "Read failure: " << e.what() << "\n";
-    return 3;
-  } catch (const std::exception& e) {
-    std::cerr << "Unexpected error: " << e.what() << "\n";
-    return 4;
   }
 
   return 0;
