@@ -4,18 +4,16 @@
 #include "../constants.hpp"
 #include "logger_exceptions.hpp"
 
-namespace {
 /**
 * @brief Вспомогательная функция для создания директорий
 * @param path Путь к директории
 * @throws std::filesystem::filesystem_error При ошибках создания
 */
 void create_directory_if_not_exists(const std::string& path) {
-  std::filesystem::path dir(path);
+  const std::filesystem::path dir(path);
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }
-}
 }
 
 std::shared_ptr<spdlog::logger> GlobalLogger::logger_ = nullptr;
