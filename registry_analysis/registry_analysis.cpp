@@ -1,146 +1,205 @@
-#include "../registry_analysis/registry_analysis.hpp"
+#include "registry_analysis.hpp"
 #include <codecvt>
 #include <locale>
-#include <stdexcept>
+#include "../file_reader/file_reader_exceptions.hpp"
+#include "registry_analysis_exceptions.hpp"
 
-RegistryAnalysis::RegistryAnalysis(const std::string& hive_file)
-    : reader_(hive_file, std::ios::binary | std::ios::in), root_offset_(0) {
-  validate_hive();
+namespace {
+constexpr uint32_t HIVE_BASE_OFFSET = RegistryEntry::HIVE_BASE_OFFSET;
+constexpr uint16_t MAX_VALUE_SIZE = RegistryEntry::MAX_VALUE_SIZE;
+constexpr size_t HIVE_HEADER_SIZE = RegistryEntry::HIVE_HEADER_SIZE;
+constexpr std::string_view HIVE_SIGNATURE = RegistryEntry::HIVE_SIGNATURE;
+constexpr size_t HIVE_VERSION_OFFSET = 0x08;
+constexpr size_t ROOT_KEY_OFFSET = 0x24;
+constexpr char PATH_DELIMITER = '\\';
+}  // namespace
+
+RegistryAnalyzer::RegistryAnalyzer(const std::string& hive_path)
+    : reader_(std::make_unique<FileReader>(hive_path)),
+      root_key_offset_(0),
+      hive_version_(0),
+      is_valid_hive_(false) {
+  try {
+    validate_hive_header();
+    is_valid_hive_ = true;
+  } catch (const HiveValidationError&) {
+    is_valid_hive_ = false;
+    throw;
+  } catch (...) {
+    is_valid_hive_ = false;
+    throw HiveValidationError("Неизвестная ошибка инициализации");
+  }
 }
 
-std::vector<uint8_t> RegistryAnalysis::read_value(const std::string& key_path,
+RegistryAnalyzer::~RegistryAnalyzer() = default;
+
+std::vector<uint8_t> RegistryAnalyzer::read_value(const std::string& key_path,
                                                   const std::string& value_name,
                                                   ValueType& out_type) const {
-  const auto key_node = find_key(key_path);
-  return read_value_data(key_node, value_name, out_type);
+  if (!is_valid_hive_) {
+    throw HiveValidationError("Файл HIVE не инициализирован");
+  }
+
+  const KeyNode target_key = traverse_key_path(key_path);
+
+  for (uint32_t i = 0; i < target_key.values_count; ++i) {
+    const uint32_t entry_offset =
+        target_key.offset + sizeof(KeyNode) + i * sizeof(ValueEntry);
+
+    const ValueEntry entry = parse_value_header(entry_offset);
+    const std::string current_name = decode_utf16_name(entry);
+
+    if (current_name == value_name) {
+      out_type = entry.type;
+      return read_value_content(entry);
+    }
+  }
+
+  throw ValueNotFoundError(value_name);
 }
 
-bool RegistryAnalysis::key_exists(const std::string& key_path) const {
+bool RegistryAnalyzer::key_exists(const std::string& key_path) const noexcept {
   try {
-    find_key(key_path);
+    traverse_key_path(key_path);
     return true;
   } catch (...) {
     return false;
   }
 }
 
-void RegistryAnalysis::validate_hive() {
-  constexpr size_t HIVE_SIGNATURE_SIZE = 4;
-  const auto header = reader_.read_chunk(HIVE_SIGNATURE_SIZE);
+std::string RegistryAnalyzer::hive_version() const {
+  const auto major = static_cast<uint16_t>(hive_version_ >> 16);
+  const auto minor = static_cast<uint16_t>(hive_version_ & 0xFFFF);
+  return std::to_string(major) + "." + std::to_string(minor);
+}
 
-  if (std::string(header.begin(), header.end()) != "regf") {
-    throw std::runtime_error("Invalid registry hive format");
+bool RegistryAnalyzer::is_loaded() const noexcept {
+  return is_valid_hive_;
+}
+
+void RegistryAnalyzer::validate_hive_header() {
+  const auto header =
+      reader_->read_chunk(static_cast<std::streamsize>(HIVE_HEADER_SIZE));
+
+  if (header.size() < HIVE_HEADER_SIZE) {
+    throw HiveValidationError("Несоответствие размера заголовка");
   }
 
-  reader_.seek(0x24);
-  const auto root_block = reader_.read_chunk(sizeof(uint32_t));
-  root_offset_ = *reinterpret_cast<const uint32_t*>(root_block.data());
+  if (!std::equal(HIVE_SIGNATURE.begin(), HIVE_SIGNATURE.end(),
+                  header.begin())) {
+    throw HiveValidationError("Неверная подпись файла");
+  }
+
+  hive_version_ =
+      *reinterpret_cast<const uint32_t*>(header.data() + HIVE_VERSION_OFFSET);
+  if ((hive_version_ >> 16) != 1) {
+    throw HiveValidationError("Неподдерживаемая версия: " + hive_version());
+  }
+
+  root_key_offset_ =
+      *reinterpret_cast<const uint32_t*>(header.data() + ROOT_KEY_OFFSET) +
+      HIVE_BASE_OFFSET;
 }
 
-KeyNode RegistryAnalysis::parse_key_node(uint32_t offset) const {
-  constexpr size_t KEY_NODE_HEADER_SIZE = 0x2C;
-  reader_.seek(offset);
-  const auto node_header = reader_.read_chunk(KEY_NODE_HEADER_SIZE);
+KeyNode RegistryAnalyzer::parse_key_header(uint32_t offset) const {
+  reader_->seek(offset);
+  const auto data = reader_->read_chunk(sizeof(KeyNode));
 
-  return KeyNode{
-      .offset = offset,
-      .subkeys_count = *reinterpret_cast<const uint32_t*>(&node_header[0x14]),
-      .values_count = *reinterpret_cast<const uint32_t*>(&node_header[0x1C])};
+  if (data.size() != sizeof(KeyNode)) {
+    throw FileReadException(reader_->path(),
+                            "Недопустимый размер ключевого заголовка");
+  }
+
+  return *reinterpret_cast<const KeyNode*>(data.data());
 }
 
-ValueEntry RegistryAnalysis::parse_value_entry(uint32_t offset) const {
-  constexpr size_t VALUE_HEADER_SIZE = 0x18;  // Размер заголовка значения
+ValueEntry RegistryAnalyzer::parse_value_header(uint32_t offset) const {
+  reader_->seek(offset);
+  const auto data = reader_->read_chunk(sizeof(ValueEntry));
 
-  reader_.seek(offset);
-  const auto value_header = reader_.read_chunk(VALUE_HEADER_SIZE);
+  if (data.size() != sizeof(ValueEntry)) {
+    throw FileReadException(reader_->path(),
+                            "Недопустимое значение размера заголовка");
+  }
 
-  return ValueEntry{
-      .name_length = *reinterpret_cast<const uint16_t*>(&value_header[0x00]),
-      .type = static_cast<ValueType>(
-          *reinterpret_cast<const uint32_t*>(&value_header[0x04])),
-      .data_offset = *reinterpret_cast<const uint32_t*>(&value_header[0x08]),
-      .data_size = *reinterpret_cast<const uint32_t*>(&value_header[0x0C]),
-      .name_offset = *reinterpret_cast<const uint32_t*>(&value_header[0x10])};
+  return *reinterpret_cast<const ValueEntry*>(data.data());
 }
 
-KeyNode RegistryAnalysis::find_key(const std::string& key_path) const {
-  KeyNode current_node = parse_key_node(root_offset_);
-  size_t start = 0;
+KeyNode RegistryAnalyzer::traverse_key_path(const std::string& key_path) const {
+  KeyNode current_node = parse_key_header(root_key_offset_);
+  size_t start_pos = 0;
 
-  while (start < key_path.size()) {
-    const auto pos = key_path.find('\\', start);
-    const auto name = key_path.substr(start, pos - start);
+  while (start_pos < key_path.size()) {
+    const size_t delimiter_pos = key_path.find(PATH_DELIMITER, start_pos);
+    const std::string segment =
+        key_path.substr(start_pos, delimiter_pos - start_pos);
 
     bool found = false;
     for (uint32_t i = 0; i < current_node.subkeys_count; ++i) {
-      const auto subkey_node =
-          parse_key_node(current_node.offset + 0x2C + i * 0x20);
-      if (compare_key_name(subkey_node, name)) {
-        current_node = subkey_node;
+      const uint32_t subkey_offset =
+          current_node.offset + sizeof(KeyNode) +
+          current_node.values_count * sizeof(ValueEntry) + i * sizeof(KeyNode);
+
+      if (compare_key_name(subkey_offset, segment)) {
+        current_node = parse_key_header(subkey_offset);
         found = true;
         break;
       }
     }
 
-    if (!found)
-      throw std::runtime_error("Key not found: " + name);
-    start = pos != std::string::npos ? pos + 1 : key_path.size();
+    if (!found) {
+      throw KeyNotFoundError(segment);
+    }
+    start_pos = (delimiter_pos != std::string::npos) ? delimiter_pos + 1
+                                                     : key_path.size();
   }
+
   return current_node;
 }
 
-bool RegistryAnalysis::compare_key_name(const KeyNode& node,
-                                        const std::string& name) const {
-  reader_.seek(node.offset + 0x2C);
-  const auto name_length = reader_.read_chunk(2);
-  const uint16_t length =
-      *reinterpret_cast<const uint16_t*>(name_length.data());
-
-  const auto name_data = reader_.read_chunk(length);
-  std::string key_name(name_data.begin(), name_data.end());
-
-  return key_name == name;
-}
-
-bool RegistryAnalysis::compare_value_name(const ValueEntry& value_entry,
-                                          const std::string& target_name) {
-  // Если имя не указано (значение по умолчанию)
-  if (value_entry.name_length == 0) {
-    return target_name.empty();
-  }
-
-  // Читаем имя значения из файла реестра
-  reader_.seek(value_entry.name_offset);
-  const auto name_data =
-      reader_.read_chunk(value_entry.name_length * 2);  // UTF-16
-
-  // Конвертируем UTF-16LE в UTF-8
-  std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-  std::u16string u16_name(reinterpret_cast<const char16_t*>(name_data.data()),
-                          value_entry.name_length);
-
+bool RegistryAnalyzer::compare_key_name(uint32_t key_offset,
+                                        const std::string& target_name) const {
   try {
-    std::string utf8_name = converter.to_bytes(u16_name);
-    return utf8_name == target_name;
+    const ValueEntry name_entry = parse_value_header(key_offset);
+    return decode_utf16_name(name_entry) == target_name;
   } catch (...) {
     return false;
   }
 }
 
-std::vector<uint8_t> RegistryAnalysis::read_value_data(
-    const KeyNode& key_node, const std::string& value_name,
-    ValueType& out_type)  {
-  for (uint32_t i = 0; i < key_node.values_count; ++i) {
-    const auto value_entry =
-        parse_value_entry(key_node.offset + 0x2C + i * 0x20);
-
-    if (compare_value_name(value_entry, value_name)) {
-      reader_.seek(key_node.offset + 0x2C + value_entry.data_offset);
-      const auto value_data = reader_.read_chunk(value_entry.data_size);
-
-      out_type = value_entry.type;
-      return std::vector<uint8_t>(value_data.begin(), value_data.end());
-    }
+std::vector<uint8_t> RegistryAnalyzer::read_value_content(
+    const ValueEntry& entry) const {
+  if (entry.data_size > MAX_VALUE_SIZE) {
+    throw ValueNotFoundError("Размер значения превышает установленный предел");
   }
-  throw std::runtime_error("Value not found: " + value_name);
+
+  reader_->seek(entry.data_offset);
+  const auto data =
+      reader_->read_chunk(static_cast<std::streamsize>(entry.data_size));
+
+  return {data.begin(), data.end()};
+}
+
+std::string RegistryAnalyzer::decode_utf16_name(const ValueEntry& entry) const {
+  if (entry.name_length == 0) {
+    return {};
+  }
+
+  const size_t byte_size = entry.name_length * sizeof(char16_t);
+  reader_->seek(entry.name_offset);
+  const auto buffer =
+      reader_->read_chunk(static_cast<std::streamsize>(byte_size));
+
+  if (buffer.size() != byte_size) {
+    throw EncodingError("Неполное декодирование UTF-16");
+  }
+
+  try {
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+    return converter.to_bytes(
+        reinterpret_cast<const char16_t*>(buffer.data()),
+        reinterpret_cast<const char16_t*>(buffer.data() + buffer.size()));
+  } catch (...) {
+    throw EncodingError("Не удалось выполнить преобразование в UTF-16");
+  }
 }

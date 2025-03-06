@@ -3,32 +3,73 @@
 #include <stdexcept>
 #include <string>
 
+/**
+ * @defgroup registry_exceptions Исключения анализа реестра
+ * @brief Иерархия исключений для обработки ошибок
+ * @ingroup registry_analysis
+ */
+
+/**
+ * @ingroup registry_exceptions
+ * @brief Базовое исключение операций с реестром
+ */
 class RegistryException : public std::runtime_error {
-public:
+ public:
+  /**
+  * @param msg Детализированное описание ошибки
+  */
   explicit RegistryException(const std::string& msg)
-      : std::runtime_error(msg) {}
+      : std::runtime_error("Ошибка реестра: " + msg) {}
 };
 
-class InvalidHiveFormat : public RegistryException {
-public:
-  explicit InvalidHiveFormat(const std::string& details)
-      : RegistryException("Invalid registry hive format: " + details) {}
+/**
+ * @ingroup registry_exceptions
+ * @brief Ошибка валидации HIVE-файла
+ */
+class HiveValidationError : public RegistryException {
+ public:
+  /**
+  * @param details Причина ошибки валидации
+  */
+  explicit HiveValidationError(const std::string& details)
+      : RegistryException("Ошибка HIVE: " + details) {}
 };
 
-class KeyNotFound : public RegistryException {
-public:
-  explicit KeyNotFound(const std::string& key)
-      : RegistryException("Registry key not found: " + key) {}
+/**
+ * @ingroup registry_exceptions
+ * @brief Ошибка отсутствия ключа
+ */
+class KeyNotFoundError : public RegistryException {
+ public:
+  /**
+  * @param key Путь к отсутствующему ключу
+  */
+  explicit KeyNotFoundError(const std::string& key)
+      : RegistryException("Ключ не найден: " + key) {}
 };
 
-class ValueNotFound : public RegistryException {
-public:
-  explicit ValueNotFound(const std::string& value)
-      : RegistryException("Registry value not found: " + value) {}
+/**
+ * @ingroup registry_exceptions
+ * @brief Ошибка отсутствия значения
+ */
+class ValueNotFoundError : public RegistryException {
+ public:
+  /**
+  * @param value Имя отсутствующего значения
+  */
+  explicit ValueNotFoundError(const std::string& value)
+      : RegistryException("Значение не найдено: " + value) {}
 };
 
-class DecodingError : public RegistryException {
-public:
-  explicit DecodingError(const std::string& details)
-      : RegistryException("String decoding failed: " + details) {}
+/**
+ * @ingroup registry_exceptions
+ * @brief Ошибка преобразования данных
+ */
+class EncodingError : public RegistryException {
+ public:
+  /**
+  * @param operation Название операции преобразования
+  */
+  explicit EncodingError(const std::string& operation)
+      : RegistryException("Ошибка кодирования: " + operation) {}
 };
