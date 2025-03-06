@@ -1,13 +1,14 @@
 #pragma once
+
 #include <spdlog/spdlog.h>
 #include <memory>
 
 /**
- * @brief Глобальный логгер для всего проекта
+ * @brief Система глобального логирования
  * @details Обеспечивает:
- * - Единую точку инициализации
- * - Потокобезопасность
  * - Ротацию логов
+ * - Потокобезопасность
+ * - Единую точку конфигурации
  */
 class GlobalLogger {
  public:
@@ -15,11 +16,8 @@ class GlobalLogger {
   static std::shared_ptr<spdlog::logger> get();
 
  private:
-  /// @brief Инициализация логгера
+  /// @brief Инициализация системы логирования
   static void initialize();
 
   static std::shared_ptr<spdlog::logger> logger_;
 };
-
-/// @brief Макрос для удобного доступа к логгеру
-#define LOGGER GlobalLogger::get()
