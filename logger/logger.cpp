@@ -1,7 +1,6 @@
 #include "logger.hpp"
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <filesystem>
-#include "../constants.hpp"
 #include "logger_exceptions.hpp"
 
 /**
@@ -20,7 +19,7 @@ std::shared_ptr<spdlog::logger> GlobalLogger::logger_ = nullptr;
 
 void GlobalLogger::initialize() {
   try {
-    constexpr size_t MAX_SIZE = 5 * SizeConstants::MB;
+    constexpr size_t MAX_SIZE = 5 * 1024 * 1024;
     constexpr size_t MAX_FILES = 5;
 
     create_directory_if_not_exists("logs");
