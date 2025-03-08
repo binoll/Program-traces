@@ -92,6 +92,14 @@ class FileReader {
    */
   [[nodiscard]] bool is_open() const noexcept;
 
+  /**
+   * @brief Чтение бинарных данных заданного типа
+   * @return Прочитанное значение
+   * @throws FileReadException При ошибке чтения
+   */
+  template <typename type>
+  type read_binary_value(uint32_t offset) const;
+
  private:
   /// @name Внутренние методы
   /// @{
@@ -108,16 +116,6 @@ class FileReader {
    * @param err Код системной ошибки
    */
   void handle_io_error(const std::string& operation, int err) const;
-
-  /**
-   * @brief Чтение бинарных данных заданного типа
-   * @tparam type Тип данных (целочисленный)
-   * @param offset Смещение в файле
-   * @return Прочитанное значение
-   * @throws FileReadException При ошибке чтения
-   */
-  template <typename type>
-  type read_binary_value(uint32_t offset) const;
 
   /// @}
 

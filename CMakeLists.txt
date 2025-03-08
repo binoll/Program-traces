@@ -7,7 +7,6 @@ add_executable(
         Program_traces
         main.cpp
         file_reader/file_reader.cpp
-        registry_analysis/registry_analysis.cpp
         logger/logger.cpp
 )
 
