@@ -12,9 +12,9 @@
 
 /**
  * @ingroup filereader_exceptions
- * @brief Базовое исключение для операций с файлами
- * 
- * Содержит информацию о пути к файлу, сообщение об ошибке 
+ * @brief Базовое исключение для файловых операций
+ *
+ * Содержит информацию о пути к файлу, сообщение об ошибке
  * и системный код ошибки (если доступен).
  */
 class FileException : public std::runtime_error {
@@ -23,7 +23,7 @@ class FileException : public std::runtime_error {
    * @brief Конструктор исключения
    * @param file_path Путь к файлу, вызвавшему ошибку
    * @param message Описание ошибки
-   * @param error_code Код системной ошибки (по умолчанию 0)
+   * @param error_code Код системной ошибки (0 если не применимо)
    */
   FileException(const std::string& file_path, const std::string& message,
                 int error_code = 0)
@@ -32,7 +32,7 @@ class FileException : public std::runtime_error {
 
   /**
    * @brief Получение кода системной ошибки
-   * @return Целочисленный код ошибки в стиле errno
+   * @return Код ошибки в стиле errno
    */
   [[nodiscard]] int code() const noexcept { return error_code_; }
 
@@ -45,7 +45,6 @@ class FileException : public std::runtime_error {
       result += " (Код: " + std::to_string(error_code) + " - " +
                 std::system_category().message(error_code) + ")";
     }
-
     return result;
   }
 
@@ -63,7 +62,7 @@ class FileOpenException : public FileException {
    * @param file_path Путь к проблемному файлу
    * @param error_code Код ошибки открытия
    */
-  FileOpenException(const std::string& file_path, int error_code)
+  explicit FileOpenException(const std::string& file_path, int error_code)
       : FileException(file_path, "Ошибка открытия файла", error_code) {}
 };
 
@@ -76,9 +75,10 @@ class FileReadException : public FileException {
   /**
    * @brief Конструктор исключения
    * @param file_path Путь к проблемному файлу
-   * @param details Детали ошибки чтения
+   * @param details Детальное описание ошибки
    */
-  FileReadException(const std::string& file_path, const std::string& details)
+  explicit FileReadException(const std::string& file_path,
+                             const std::string& details)
       : FileException(file_path, "Ошибка чтения: " + details) {}
 };
 
@@ -93,7 +93,7 @@ class FileSeekException : public FileException {
    * @param file_path Путь к проблемному файлу
    * @param error_code Код ошибки позиционирования
    */
-  FileSeekException(const std::string& file_path, int error_code)
+  explicit FileSeekException(const std::string& file_path, int error_code)
       : FileException(file_path, "Ошибка позиционирования", error_code) {}
 };
 
@@ -108,6 +108,19 @@ class FileStateException : public FileException {
    * @param file_path Путь к проблемному файлу
    * @param error_code Код ошибки состояния
    */
-  FileStateException(const std::string& file_path, int error_code)
+  explicit FileStateException(const std::string& file_path, int error_code)
       : FileException(file_path, "Некорректное состояние файла", error_code) {}
+};
+
+/**
+ * @ingroup filereader_exceptions
+ * @brief Исключение при превышении времени ожидания
+ */
+class TimeoutException : public std::runtime_error {
+ public:
+  /**
+   * @brief Конструктор исключения
+   * @param msg Сообщение об ошибке с описанием таймаута
+   */
+  explicit TimeoutException(const std::string& msg) : std::runtime_error(msg) {}
 };

@@ -1,124 +1,147 @@
 #include "file_reader.hpp"
-#include <algorithm>
+#include "../logger/logger.hpp"
 #include "file_reader_exceptions.hpp"
 
-FileReader::FileReader(std::string path, std::ios::openmode mode)
-    : file_path_(std::move(path)), handle_(std::make_unique<FileHandle>()) {
-  LOGGER->debug("Инициализация FileReader: {}", file_path_);
-
-  std::lock_guard lock(handle_->mtx);
+FileReader::FileReader(const fs::path& path, std::ios::openmode mode)
+    : file_path_(path), handle_(std::make_unique<FileHandle>()) {
+  handle_->stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   handle_->stream.open(file_path_, mode);
-
-  if (!handle_->stream.is_open()) {
-    throw FileOpenException(file_path_, errno);
-  }
-
-  handle_->pos = handle_->stream.tellg();
+  handle_->last_modified = fs::last_write_time(file_path_);
+  start_monitoring();
 }
 
 FileReader::~FileReader() {
-  std::lock_guard lock(handle_->mtx);
+  stop_monitoring();
   if (handle_->stream.is_open()) {
-    LOGGER->debug("Закрытие файла: {}", file_path_);
     handle_->stream.close();
   }
 }
 
+FileReader::FileReader(FileReader&& other) noexcept
+    : file_path_(std::move(other.file_path_)),
+      handle_(std::move(other.handle_)),
+      cache_(std::move(other.cache_)),
+      max_cache_blocks_(other.max_cache_blocks_),
+      callback_id_(other.callback_id_.load()) {
+  other.stop_monitoring();
+  start_monitoring();
+}
+
+FileReader& FileReader::operator=(FileReader&& other) noexcept {
+  if (this != &other) {
+    stop_monitoring();
+    file_path_ = std::move(other.file_path_);
+    handle_ = std::move(other.handle_);
+    cache_ = std::move(other.cache_);
+    max_cache_blocks_ = other.max_cache_blocks_;
+    callback_id_.store(other.callback_id_.load());
+    other.stop_monitoring();
+    start_monitoring();
+  }
+  return *this;
+}
+
 std::vector<char> FileReader::read() const {
-  std::lock_guard lock(handle_->mtx);
-  LOGGER->trace("Чтение всего файла: {}", file_path_);
+  std::unique_lock<std::timed_mutex> lock(handle_->mtx);
+  handle_->stream.seekg(0, std::ios::end);
+  const auto size = handle_->stream.tellg();
+  handle_->stream.seekg(0, std::ios::beg);
 
-  validate_stream();
-  handle_->stream.seekg(0);
-
-  std::vector<char> content((std::istreambuf_iterator<char>(handle_->stream)),
-                            std::istreambuf_iterator<char>());
+  std::vector<char> content(static_cast<size_t>(size));
+  handle_->stream.read(content.data(), size);
 
   if (handle_->stream.fail() && !handle_->stream.eof()) {
-    handle_io_error("read", errno);
+    throw std::runtime_error("Failed to read file: " + file_path_.string());
   }
-
-  handle_->pos = handle_->stream.tellg();
-
   return content;
 }
 
-std::vector<char> FileReader::read_chunk(std::streamsize size) const {
-  std::lock_guard lock(handle_->mtx);
-  LOGGER->trace("Чтение блока {} байт", size);
+std::streamsize FileReader::file_size(std::chrono::milliseconds timeout) const {
+  std::unique_lock<std::timed_mutex> lock(handle_->mtx, std::defer_lock);
 
-  validate_stream();
-  std::vector<char> buffer(size, 0);
-
-  handle_->stream.read(buffer.data(), size);
-  buffer.resize(handle_->stream.gcount());
-
-  if (handle_->stream.fail() && !handle_->stream.eof()) {
-    handle_io_error("read_chunk", errno);
+  if (timeout.count() > 0 && !lock.try_lock_for(timeout)) {
+    throw TimeoutException("File size operation timed out");
   }
+  lock.lock();
 
-  handle_->pos = handle_->stream.tellg();
-
-  return buffer;
-}
-
-void FileReader::seek(std::streampos pos) const {
-  std::lock_guard lock(handle_->mtx);
-  LOGGER->trace("Установка позиции: {}", pos);
-
-  validate_stream();
-  handle_->stream.seekg(pos);
-
-  if (handle_->stream.fail()) {
-    handle_io_error("seek", errno);
+  if (handle_->cached_size == -1) {
+    const auto current_pos = handle_->stream.tellg();
+    handle_->stream.seekg(0, std::ios::end);
+    handle_->cached_size = handle_->stream.tellg();
+    handle_->stream.seekg(current_pos);
   }
-
-  handle_->pos = handle_->stream.tellg();
+  return handle_->cached_size;
 }
 
-std::streampos FileReader::tell() const noexcept {
-  std::lock_guard lock(handle_->mtx);
-  return handle_->pos;
+std::future<std::vector<char>> FileReader::async_read() const {
+  return std::async(std::launch::async, [this]() {
+    std::unique_lock<std::timed_mutex> lock(handle_->mtx);
+    return read();
+  });
 }
 
-bool FileReader::is_open() const noexcept {
-  std::lock_guard lock(handle_->mtx);
-  return handle_->stream.is_open();
+void FileReader::set_cache_size(size_t max_blocks) {
+  std::lock_guard lock(cache_mutex_);
+  max_cache_blocks_ = max_blocks;
+  check_cache_expiration();
 }
 
-void FileReader::validate_stream() const {
-  if (!handle_->stream.is_open()) {
-    throw FileStateException(file_path_, EBADF);
+size_t FileReader::subscribe_changes(
+    std::function<void(const fs::path&)> callback) {
+  std::lock_guard lock(callback_mutex_);
+  const size_t id = ++callback_id_;
+  callbacks_.emplace(id, std::move(callback));
+  return id;
+}
+
+void FileReader::unsubscribe_changes(size_t token) {
+  std::lock_guard lock(callback_mutex_);
+  callbacks_.erase(token);
+}
+
+void FileReader::start_monitoring() {
+  if (monitoring_active_)
+    return;
+  monitoring_active_ = true;
+  monitoring_thread_ = std::thread(&FileReader::monitoring_loop, this);
+}
+
+void FileReader::stop_monitoring() {
+  monitoring_active_ = false;
+  if (monitoring_thread_.joinable()) {
+    monitoring_thread_.join();
   }
 }
 
-void FileReader::handle_io_error(const std::string& operation, int err) const {
-  handle_->stream.clear();
-  handle_->stream.seekg(handle_->pos);
+void FileReader::monitoring_loop() {
+  while (monitoring_active_) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    try {
+      auto new_time = fs::last_write_time(file_path_);
+      if (new_time != handle_->last_modified) {
+        handle_->last_modified = new_time;
+        handle_->cached_size = -1;
 
-  if (operation == "read" || operation == "read_chunk") {
-    throw FileReadException(file_path_, std::to_string(err));
+        std::shared_lock lock(callback_mutex_);
+        for (const auto& [id, cb] : callbacks_) {
+          cb(file_path_);
+        }
+      }
+    } catch (const std::exception& e) {
+      LOGGER->error("Monitoring error: {}", e.what());
+    }
   }
-  if (operation == "seek") {
-    throw FileSeekException(file_path_, err);
-  }
-
-  throw FileException(file_path_, "Неизвестная операция", err);
 }
 
-template <typename type>
-type FileReader::read_binary_value(uint32_t offset) const {
-  seek(offset);
-  const auto data = read_chunk(sizeof(type));
+void FileReader::check_cache_expiration() const {
+  const auto now = std::chrono::steady_clock::now();
+  const auto expiration_time = std::chrono::minutes(5);
 
-  if (data.size() < sizeof(type)) {
-    throw FileReadException(file_path_, "Недостаточно данных для типа " +
-                                            std::string(typeid(type).name()));
+  cache_.remove_if([&](const CacheBlock& block) {
+    return (now - block.timestamp) > expiration_time;
+  });
+
+  while (cache_.size() > max_cache_blocks_) {
+    cache_.pop_back();
   }
-
-  return *reinterpret_cast<const type*>(data.data());
 }
-
-// Явные инстанциации шаблонов
-template uint32_t FileReader::read_binary_value<uint32_t>(uint32_t) const;
-template uint16_t FileReader::read_binary_value<uint16_t>(uint32_t) const;
