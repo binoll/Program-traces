@@ -3,29 +3,36 @@
 #include <filesystem>
 #include "logger_exceptions.hpp"
 
-/**
-* @brief Вспомогательная функция для создания директорий
-* @param path Путь к директории
-* @throws std::filesystem::filesystem_error При ошибках создания
-*/
-void create_directory_if_not_exists(const std::string& path) {
-  const std::filesystem::path dir(path);
-  if (!std::filesystem::exists(dir)) {
-    std::filesystem::create_directories(dir);
+std::string GlobalLogger::logPath_ = "logs/app.log";
+std::shared_ptr<spdlog::logger> GlobalLogger::logger_ = nullptr;
+
+void GlobalLogger::setLogPath(const std::string& path) {
+  if (logger_) {
+    throw std::logic_error(
+        "Логгер уже инициализирован. Установите путь к логу до первого "
+        "использования.");
   }
+  logPath_ = path;
 }
 
-std::shared_ptr<spdlog::logger> GlobalLogger::logger_ = nullptr;
+void create_directory_if_not_exists(const std::string& file_path) {
+  const std::filesystem::path path(file_path);
+  auto parent_dir = path.parent_path();
+
+  if (!parent_dir.empty() && !std::filesystem::exists(parent_dir)) {
+    std::filesystem::create_directories(parent_dir);
+  }
+}
 
 void GlobalLogger::initialize() {
   try {
     constexpr size_t MAX_SIZE = 5 * 1024 * 1024;
     constexpr size_t MAX_FILES = 5;
 
-    create_directory_if_not_exists("logs");
+    create_directory_if_not_exists(logPath_);
 
-    logger_ = spdlog::rotating_logger_mt("global", "logs/app.log", MAX_SIZE,
-                                         MAX_FILES);
+    logger_ =
+        spdlog::rotating_logger_mt("global", logPath_, MAX_SIZE, MAX_FILES);
     logger_->set_pattern("[%Y-%m-%d %T.%e] [%l] %v");
     logger_->set_level(spdlog::level::debug);
   } catch (const spdlog::spdlog_ex& ex) {

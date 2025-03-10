@@ -10,7 +10,7 @@
 class LoggerException : public std::runtime_error {
  public:
   explicit LoggerException(const std::string& message)
-      : std::runtime_error("[Logger] " + message) {}
+      : std::runtime_error("[Логгер] " + message) {}
 };
 
 /**
