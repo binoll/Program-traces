@@ -1,7 +1,7 @@
 /**
  * @file registry_analyzer.cpp
  * @brief Реализация методов анализатора реестра
- */
+*/
 
 #include "registry_analyzer.hpp"
 #include <libregf.h>
