@@ -2,7 +2,6 @@
  * @file registry_analyzer.hpp
  * @brief Анализатор файлов реестра Windows
  * @details Реализует чтение и анализ файлов реестра с использованием библиотеки libregf.
- *          Поддерживает извлечение ключей, значений и данных различных типов (строки, DWORD, QWORD, бинарные данные).
  */
 
 #pragma once
@@ -17,40 +16,40 @@ namespace RegistryAnalysis {
 
 /**
  * @struct RegistryValue
- * @brief Структура для хранения значения реестра
- * @details Содержит имя, данные и тип значения реестра.
+ * @brief Контейнер данных значения реестра
+ * @details Содержит имя, данные и тип значения в унифицированном формате.
  */
 struct RegistryValue {
-  std::string name;  ///< Имя значения (например, "Version")
-  std::string data;  ///< Данные в строковом представлении (например, "1.0.0")
+  std::string name;  ///< Имя значения в кодировке UTF-8
+  std::string data;  ///< Данные в строковом представлении
   uint32_t type;     ///< Тип значения (REG_SZ=1, REG_DWORD=4, REG_QWORD=11)
 };
 
 /**
- * @class IKeyValueProvider
- * @brief Интерфейс для чтения данных из реестра
- * @details Определяет контракт для классов, предоставляющих доступ к данным реестра.
+ * @interface IKeyValueProvider
+ * @brief Интерфейс для доступа к данным реестра
+ * @details Определяет контракт для чтения ключей и значений реестра.
  */
 class IKeyValueProvider {
  public:
   virtual ~IKeyValueProvider() = default;
 
   /**
-   * @brief Получить все значения указанного ключа
-   * @param[in] key_path Путь к ключу в формате "ROOT\\Subkey\\..."
-   * @return Вектор структур RegistryValue с данными ключа
-   * @throw SubkeyNotFoundError Если ключ не существует
-   * @throw std::runtime_error При ошибках чтения
+   * @brief Получить все значения ключа
+   * @param[in] key_path Путь к ключу в формате "ROOT\\Подраздел\\..."
+   * @return Вектор значений типа RegistryValue
+   * @throw SubkeyNotFoundError Если подраздел не найден
+   * @throw RootKeyError Если корневой ключ недоступен
    */
   [[nodiscard]] virtual std::vector<RegistryValue> GetAllKeyValues(
       const std::string& key_path) const = 0;
 
   /**
-   * @brief Получить конкретное значение по имени
-   * @param[in] key_path Путь к ключу
-   * @param[in] value_name Имя значения (например, "ProductName")
-   * @return Заполненная структура RegistryValue
-   * @throw ValueNotFoundError Если значение не найдено
+   * @brief Получить значение по имени
+   * @param[in] key_path Путь к целевому ключу
+   * @param[in] value_name Имя значения (регистрозависимое)
+   * @return Структура RegistryValue с данными
+   * @throw ValueNotFoundError Если значение отсутствует
    * @throw SubkeyNotFoundError Если ключ не существует
    */
   [[nodiscard]] virtual RegistryValue GetValueByName(
@@ -60,46 +59,78 @@ class IKeyValueProvider {
 /**
  * @class KeyHandle
  * @brief RAII-обёртка для управления ключами реестра
- * @details Автоматически освобождает ресурсы при выходе из области видимости.
+ * @details Автоматически освобождает ресурсы ключа при разрушении объекта.
  */
 struct KeyHandle {
-  libregf_key_t* ptr;  ///< Указатель на ключ реестра
+  libregf_key_t* ptr;  ///< Нативный указатель на ключ из libregf
 
   /**
    * @brief Конструктор из сырого указателя
    * @param[in] key Указатель на ключ (может быть nullptr)
    */
-  explicit KeyHandle(libregf_key_t* key = nullptr) noexcept : ptr(key) {}
+  explicit KeyHandle(libregf_key_t* key = nullptr) noexcept;
 
-  ~KeyHandle() = default;
+  /**
+   * @brief Конструктор перемещения
+   * @param[in] other Временный объект KeyHandle
+   */
+  KeyHandle(KeyHandle&& other) noexcept;
+
+  /**
+   * @brief Оператор перемещающего присваивания
+   * @param[in] other Временный объект KeyHandle
+   */
+  KeyHandle& operator=(KeyHandle&& other) noexcept;
+
+  /**
+   * @brief Деструктор (освобождает ресурсы)
+   */
+  ~KeyHandle();
+
+  KeyHandle(const KeyHandle&) = delete;
+  KeyHandle& operator=(const KeyHandle&) = delete;
 };
 
 /**
  * @class ValueHandle
  * @brief RAII-обёртка для управления значениями реестра
- * @details Гарантирует корректное освобождение ресурсов.
+ * @details Гарантирует безопасное освобождение ресурсов значения.
  */
 struct ValueHandle {
-  libregf_value_t* ptr;  ///< Указатель на значение реестра
+  libregf_value_t* ptr;  ///< Нативный указатель на значение из libregf
 
   /**
    * @brief Конструктор из сырого указателя
    * @param[in] value Указатель на значение (может быть nullptr)
    */
-  explicit ValueHandle(libregf_value_t* value = nullptr) noexcept
-      : ptr(value) {}
+  explicit ValueHandle(libregf_value_t* value = nullptr) noexcept;
 
-  ~ValueHandle() {
-    if (ptr)
-      libregf_value_free(&ptr, nullptr);
-  }
+  /**
+   * @brief Конструктор перемещения
+   * @param[in] other Временный объект ValueHandle
+   */
+  ValueHandle(ValueHandle&& other) noexcept;
+
+  /**
+   * @brief Оператор перемещающего присваивания
+   * @param[in] other Временный объект ValueHandle
+   */
+  ValueHandle& operator=(ValueHandle&& other) noexcept;
+
+  /**
+   * @brief Деструктор (освобождает ресурсы)
+   */
+  ~ValueHandle();
+
+  ValueHandle(const ValueHandle&) = delete;
+  ValueHandle& operator=(const ValueHandle&) = delete;
 };
 
 /**
  * @class RegistryAnalyzer
  * @brief Основной класс для работы с файлами реестра
  * @implements IKeyValueProvider
- * @details Использует PIMPL идиому для сокрытия деталей реализации.
+ * @details Использует PIMPL для изоляции зависимостей от библиотеки libregf.
  */
 class RegistryAnalyzer : public IKeyValueProvider {
  public:
@@ -107,9 +138,9 @@ class RegistryAnalyzer : public IKeyValueProvider {
   ~RegistryAnalyzer() override;
 
   /**
-   * @brief Открыть файл реестра
+   * @brief Открыть файл реестра для анализа
    * @param[in] file_path Путь к файлу (например, "C:\\Windows\\system32\\config\\SOFTWARE")
-   * @throw FileOpenError При ошибках доступа к файлу
+   * @throw FileOpenError При ошибке открытия файла
    */
   void Open(const std::string& file_path) const;
 
@@ -117,7 +148,7 @@ class RegistryAnalyzer : public IKeyValueProvider {
    * @brief Получить все значения ключа
    * @details Рекурсивно обходит подразделы и возвращает все значения.
    * @param[in] key_path Путь к ключу реестра
-   * @throw SubkeyNotFoundError Если путь содержит несуществующие подразделы
+   * @throw SubkeyNotFoundError Если подраздел не существует
    */
   [[nodiscard]] std::vector<RegistryValue> GetAllKeyValues(
       const std::string& key_path) const override;
@@ -126,68 +157,87 @@ class RegistryAnalyzer : public IKeyValueProvider {
    * @brief Получить значение по имени
    * @param[in] key_path Путь к целевому ключу
    * @param[in] value_name Имя значения (регистрозависимое)
-   * @throw ValueNotFoundError Если значение отсутствует в ключе
+   * @throw ValueNotFoundError Если значение не найдено
    */
   [[nodiscard]] RegistryValue GetValueByName(
       const std::string& key_path,
       const std::string& value_name) const override;
 
  private:
-  /**
-   * @class Impl
-   * @brief Внутренняя реализация работы с libregf
-   * @details Содержит методы для низкоуровневого взаимодействия с библиотекой.
-   */
-  class Impl {
-   public:
-    Impl();
-    ~Impl();
-
-    /**
-     * @brief Открыть файл реестра (внутренняя реализация)
-     * @throw FileOpenError При ошибках чтения файла
-     */
-    void Open(const std::string& file_path) const;
-
-    /// @copydoc RegistryAnalyzer::GetAllKeyValues
-    [[nodiscard]] std::vector<RegistryValue> GetAllKeyValues(
-        const std::string& key_path) const;
-
-    /// @copydoc RegistryAnalyzer::GetValueByName
-    [[nodiscard]] RegistryValue GetValueByName(
-        const std::string& key_path, const std::string& value_name) const;
-
-   private:
-    /**
-     * @brief Разрешить путь к ключу
-     * @param[in] path Путь вида "ROOT\\Subkey1\\Subkey2"
-     * @throw RootKeyError При ошибке доступа к корневому ключу
-     */
-    [[nodiscard]] KeyHandle ResolveKeyPath(const std::string& path) const;
-
-    /**
-     * @brief Извлечь данные значения реестра
-     * @param[in] value Указатель на объект значения
-     * @return Заполненная структура RegistryValue
-     */
-    static RegistryValue ExtractValueData(libregf_value_t* value);
-
-    /// @brief Извлечь строковое значение
-    static void ExtractString(libregf_value_t* value, std::string& output);
-
-    /// @brief Извлечь 32-битное целое (DWORD)
-    static void ExtractDword(libregf_value_t* value, std::string& output);
-
-    /// @brief Извлечь 64-битное целое (QWORD)
-    static void ExtractQword(libregf_value_t* value, std::string& output);
-
-    /// @brief Извлечь бинарные данные в hex-строку
-    static void ExtractBinary(libregf_value_t* value, std::string& output);
-
-    libregf_file_t* file_ = nullptr;  ///< Указатель на открытый файл реестра
-  };
-
-  std::unique_ptr<Impl> impl_;  ///< Указатель на внутреннюю реализацию
+  /// @brief Внутренняя реализация (PIMPL)
+  class Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace RegistryAnalysis
+/**
+ * @class RegistryAnalyzer::Impl
+ * @brief Внутренняя реализация анализатора реестра
+ * @details Содержит низкоуровневую логику работы с библиотекой libregf.
+ */
+class RegistryAnalyzer::Impl {
+ public:
+  /**
+   * @brief Конструктор внутренней реализации
+   * @throw RegistryInitializationError При ошибке инициализации
+   */
+  Impl();
+
+  /**
+   * @brief Деструктор внутренней реализации
+   */
+  ~Impl();
+
+  /**
+   * @brief Открыть файл реестра
+   * @param[in] file_path Путь к файлу реестра
+   * @throw FileOpenError При ошибке доступа
+   */
+  void Open(const std::string& file_path) const;
+
+  /**
+   * @brief Получить все значения ключа
+   * @param[in] key_path Путь к ключу в формате "ROOT\\Подраздел\\..."
+   * @throw SubkeyNotFoundError Если путь содержит несуществующие подразделы
+   */
+  [[nodiscard]] std::vector<RegistryValue> GetAllKeyValues(
+      const std::string& key_path) const;
+
+  /**
+   * @brief Получить значение по имени
+   * @param[in] key_path Путь к целевому ключу
+   * @param[in] value_name Имя значения
+   * @throw ValueNotFoundError Если значение отсутствует
+   */
+  [[nodiscard]] RegistryValue GetValueByName(
+      const std::string& key_path, const std::string& value_name) const;
+
+ private:
+  /**
+   * @brief Разрешить путь к ключу
+   * @param[in] path Путь вида "ROOT\\Подраздел1\\Подраздел2"
+   * @throw SubkeyNotFoundError Если подраздел отсутствует
+   */
+  [[nodiscard]] KeyHandle ResolveKeyPath(const std::string& path) const;
+
+  /**
+   * @brief Извлечь данные значения реестра
+   * @param[in] value Указатель на объект значения
+   */
+  static RegistryValue ExtractValueData(libregf_value_t* value);
+
+  /// @brief Извлечь строковое значение (REG_SZ, REG_EXPAND_SZ)
+  static void ExtractString(libregf_value_t* value, std::string& output);
+
+  /// @brief Извлечь 32-битное целое (REG_DWORD)
+  static void ExtractDword(libregf_value_t* value, std::string& output);
+
+  /// @brief Извлечь 64-битное целое (REG_QWORD)
+  static void ExtractQword(libregf_value_t* value, std::string& output);
+
+  /// @brief Извлечь бинарные данные (REG_BINARY)
+  static void ExtractBinary(libregf_value_t* value, std::string& output);
+
+  libregf_file_t* file_ = nullptr;  ///< Указатель на открытый файл реестра
+};
+
+}

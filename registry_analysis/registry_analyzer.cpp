@@ -5,15 +5,58 @@
 
 #include "registry_analyzer.hpp"
 #include <libregf.h>
-
+#include <cstring>
 #include <iomanip>
 #include <sstream>
-#include <vector>
 #include "registry_analyzer_exceptions.hpp"
 
 namespace RegistryAnalysis {
 
-// Реализация методов Impl
+/*-------------- Реализация KeyHandle --------------*/
+KeyHandle::KeyHandle(libregf_key_t* key) noexcept : ptr(key) {}
+
+KeyHandle::KeyHandle(KeyHandle&& other) noexcept : ptr(other.ptr) {
+  other.ptr = nullptr;
+}
+
+KeyHandle& KeyHandle::operator=(KeyHandle&& other) noexcept {
+  if (this != &other) {
+    if (ptr)
+      libregf_key_free(&ptr, nullptr);
+    ptr = other.ptr;
+    other.ptr = nullptr;
+  }
+  return *this;
+}
+
+KeyHandle::~KeyHandle() {
+  if (ptr)
+    libregf_key_free(&ptr, nullptr);
+}
+
+/*-------------- Реализация ValueHandle --------------*/
+ValueHandle::ValueHandle(libregf_value_t* value) noexcept : ptr(value) {}
+
+ValueHandle::ValueHandle(ValueHandle&& other) noexcept : ptr(other.ptr) {
+  other.ptr = nullptr;
+}
+
+ValueHandle& ValueHandle::operator=(ValueHandle&& other) noexcept {
+  if (this != &other) {
+    if (ptr)
+      libregf_value_free(&ptr, nullptr);
+    ptr = other.ptr;
+    other.ptr = nullptr;
+  }
+  return *this;
+}
+
+ValueHandle::~ValueHandle() {
+  if (ptr)
+    libregf_value_free(&ptr, nullptr);
+}
+
+/*-------------- Реализация RegistryAnalyzer::Impl --------------*/
 RegistryAnalyzer::Impl::Impl() {
   if (libregf_file_initialize(&file_, nullptr) != 1) {
     throw RegistryInitializationError();
@@ -21,9 +64,8 @@ RegistryAnalyzer::Impl::Impl() {
 }
 
 RegistryAnalyzer::Impl::~Impl() {
-  if (file_) {
+  if (file_)
     libregf_file_free(&file_, nullptr);
-  }
 }
 
 void RegistryAnalyzer::Impl::Open(const std::string& file_path) const {
@@ -59,8 +101,8 @@ RegistryValue RegistryAnalyzer::Impl::GetValueByName(
   ValueHandle value;
 
   if (libregf_key_get_value_by_utf8_name(
-          key.ptr, reinterpret_cast<const uint8_t*>(value_name.c_str()), 0,
-          &value.ptr, nullptr) != 1) {
+          key.ptr, reinterpret_cast<const uint8_t*>(value_name.c_str()),
+          value_name.size(), &value.ptr, nullptr) != 1) {
     throw ValueNotFoundError(value_name);
   }
 
@@ -74,25 +116,26 @@ KeyHandle RegistryAnalyzer::Impl::ResolveKeyPath(
     throw RootKeyError();
   }
 
-  if (path.empty()) {
-    return root_key;
-  }
+  if (path.empty())
+    return std::move(root_key);
 
   size_t start = 0;
-  size_t end;
-  KeyHandle current_key = root_key;
+  KeyHandle current_key = std::move(root_key);
 
-  while ((end = path.find('/', start)) != std::string::npos) {
+  while (true) {
+    size_t end = path.find('/', start);
+    if (end == std::string::npos)
+      break;
+
     const std::string token = path.substr(start, end - start);
     KeyHandle next_key;
-
     if (libregf_key_get_sub_key_by_utf8_name(
             current_key.ptr, reinterpret_cast<const uint8_t*>(token.c_str()),
             token.size(), &next_key.ptr, nullptr) != 1) {
       throw SubkeyNotFoundError(token);
     }
 
-    current_key = next_key;
+    current_key = std::move(next_key);
     start = end + 1;
   }
 
@@ -110,7 +153,6 @@ KeyHandle RegistryAnalyzer::Impl::ResolveKeyPath(
 RegistryValue RegistryAnalyzer::Impl::ExtractValueData(libregf_value_t* value) {
   RegistryValue result;
 
-  // Получение имени значения
   size_t name_size = 0;
   if (libregf_value_get_utf8_name_size(value, &name_size, nullptr) == 1 &&
       name_size > 0) {
@@ -121,19 +163,17 @@ RegistryValue RegistryAnalyzer::Impl::ExtractValueData(libregf_value_t* value) {
     }
   }
 
-  // Получение типа значения
   libregf_value_get_value_type(value, &result.type, nullptr);
 
-  // Обработка данных в зависимости от типа
   switch (result.type) {
-    case 1:  // REG_SZ
-    case 2:  // REG_EXPAND_SZ
+    case 1:
+    case 2:
       ExtractString(value, result.data);
       break;
-    case 4:  // REG_DWORD
+    case 4:
       ExtractDword(value, result.data);
       break;
-    case 11:  // REG_QWORD
+    case 11:
       ExtractQword(value, result.data);
       break;
     default:
@@ -146,21 +186,21 @@ RegistryValue RegistryAnalyzer::Impl::ExtractValueData(libregf_value_t* value) {
 
 void RegistryAnalyzer::Impl::ExtractString(libregf_value_t* value,
                                            std::string& output) {
-  // Шаг 1: Получение размера данных через отдельную функцию
   size_t data_size = 0;
-  if (libregf_value_get_value_data_size(value, &data_size, nullptr) != 1) {
+  if (libregf_value_get_value_data_size(value, &data_size, nullptr) != 1 ||
+      data_size == 0) {
+    output.clear();
     return;
   }
 
-  // Шаг 2: Выделение буфера с учетом размера
   std::vector<uint8_t> buffer(data_size);
-
-  // Шаг 3: Получение данных
-  size_t actual_size = data_size;
   if (libregf_value_get_value_utf8_string(value, buffer.data(), buffer.size(),
                                           nullptr) == 1) {
-    // Копирование данных без учета null-терминатора (если он есть)
-    output.assign(reinterpret_cast<char*>(buffer.data()), actual_size);
+    const char* str = reinterpret_cast<const char*>(buffer.data());
+    size_t actual_length = strnlen(str, data_size);
+    output.assign(str, actual_length);
+  } else {
+    output.clear();
   }
 }
 
@@ -188,13 +228,12 @@ void RegistryAnalyzer::Impl::ExtractBinary(libregf_value_t* value,
   while (!data_read) {
     int result = libregf_value_get_value_data(value, buffer.data(),
                                               buffer.size(), nullptr);
-
     if (result == 1) {
       data_read = true;
     } else if (result == -1 && buffer.size() < 1024 * 1024) {
       buffer.resize(buffer.size() * 2);
     } else {
-      throw std::runtime_error("Ошибка чтения бинарных данных");
+      throw BinaryDataReadError();
     }
   }
 
@@ -206,7 +245,7 @@ void RegistryAnalyzer::Impl::ExtractBinary(libregf_value_t* value,
   output = oss.str();
 }
 
-// Реализация публичных методов
+/*-------------- Реализация RegistryAnalyzer --------------*/
 RegistryAnalyzer::RegistryAnalyzer() : impl_(std::make_unique<Impl>()) {}
 
 RegistryAnalyzer::~RegistryAnalyzer() = default;
@@ -225,4 +264,4 @@ RegistryValue RegistryAnalyzer::GetValueByName(
   return impl_->GetValueByName(key_path, value_name);
 }
 
-}  // namespace RegistryAnalysis
+}

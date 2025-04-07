@@ -1,42 +1,47 @@
 #include <iostream>
 #include "registry_analysis/registry_analyzer.hpp"
-#include "registry_analysis/registry_analyzer_exceptions.hpp"
 
 int main(int argc, char* argv[]) {
   try {
     RegistryAnalysis::RegistryAnalyzer analyzer;
-
-    // Путь к SOFTWARE (а не SAM)
     std::string software_path(argv[1]);
     software_path += "/Windows/System32/config/SOFTWARE";
-
     analyzer.Open(software_path);
-    std::cout << "Файл SOFTWARE успешно открыт\n";
 
-    // Ключ, содержащий информацию о версии Windows
     const std::string version_key = "Microsoft/Windows NT/CurrentVersion";
-
-    // Получаем все значения ключа
     auto values = analyzer.GetAllKeyValues(version_key);
 
-    std::cout << "\nИнформация о версии Windows:\n";
+    // Сбор данных
+    std::string product_name, display_version, current_build;
+    int major_version = 0, minor_version = 0;
+
     for (const auto& val : values) {
-      if (val.name == "ProductName" || val.name == "CurrentVersion" ||
-          val.name == "CurrentBuild" || val.name == "DisplayVersion") {
-        std::cout << val.name << ": " << val.data << "\n";
-      }
+      if (val.name == "ProductName")
+        product_name = val.data;
+      else if (val.name == "DisplayVersion")
+        display_version = val.data;
+      else if (val.name == "CurrentBuild")
+        current_build = val.data;
+      else if (val.name == "CurrentMajorVersionNumber")
+        major_version = std::stoi(val.data);
+      else if (val.name == "CurrentMinorVersionNumber")
+        minor_version = std::stoi(val.data);
     }
 
-  } catch (const RegistryAnalysis::FileOpenError& e) {
-    std::cerr << "Ошибка открытия файла: " << e.what() << "\n";
-    return 1;
-  } catch (const RegistryAnalysis::SubkeyNotFoundError& e) {
-    std::cerr << "Ошибка поиска ключа: " << e.what() << "\n";
-    return 2;
-  } catch (const std::exception& e) {
-    std::cerr << "Неизвестная ошибка: " << e.what() << "\n";
-    return 3;
-  }
+    // Определение версии
+    bool is_windows11 = (major_version >= 10 && minor_version >= 0 &&
+                         std::stoi(current_build) >= 22000);
 
+    std::cout << "Информация о системе:\n"
+              << "  ProductName: " << product_name << "\n"
+              << "  DisplayVersion: " << display_version << "\n"
+              << "  CurrentBuild: " << current_build << "\n"
+              << "  Версия ОС: " << (is_windows11 ? "Windows 11" : "Windows 10")
+              << "\n";
+
+  } catch (const std::exception& e) {
+    std::cerr << "Ошибка: " << e.what() << "\n";
+    return 1;
+  }
   return 0;
 }
