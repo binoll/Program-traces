@@ -8,20 +8,22 @@ from the Windows operating system
 
 ## Dependencies
 
-1. Install the dependencies
+### Installing common dependencies
 
 ```bash
-sudo apt update && sudo apt install git autoconf automake autopoint libtool pkg-config python3-dev libspdlog-dev
+sudo apt update && sudo apt install cmake libspdlog-dev git autoconf automake libtool pkg-config gcc g++ make libfuse-dev -y
 ```
 
-2. Clone the repository
+### Install libregf
+
+1. Clone the repository
 
 ```bash
 git clone https://github.com/libyal/libregf.git
 cd libregf
 ```
 
-3. Build and install the library "libregf"
+2. Build and install the library "libregf"
 
 ```bash
 ./synclibs.sh
@@ -31,10 +33,47 @@ make
 sudo make install
 ```
 
-4. Update the library cache
+3. Update the library cache
 
 ```bash
 sudo ldconfig
+```
+
+4. Checking the installation
+
+```bash
+regfinfo
+```
+
+### Install libscca
+
+1. Clone the repository
+
+```bash
+git clone https://github.com/libyal/libscca.git
+cd libscca
+```
+
+2. Build and install the library "libregf"
+
+```bash
+./synclibs.sh
+./autogen.sh
+./configure
+make
+sudo make install
+```
+
+3. Update the library cache
+
+```bash
+sudo ldconfig
+```
+
+4. Checking the installation
+
+```bash
+sccainfo
 ```
 
 ## Build
