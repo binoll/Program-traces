@@ -6,7 +6,7 @@
 #include "handles.hpp"
 #include <libregf.h>
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 KeyHandle::KeyHandle(libregf_key_t* key) noexcept : ptr_(key) {}
 

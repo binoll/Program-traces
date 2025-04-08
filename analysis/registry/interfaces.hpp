@@ -11,7 +11,7 @@
 #include "exceptions.hpp"
 #include "models.hpp"
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 /**
  * @interface IKeyValueProvider

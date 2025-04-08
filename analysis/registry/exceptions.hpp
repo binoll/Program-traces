@@ -1,6 +1,6 @@
 /**
  * @file exceptions.hpp
- * @brief Пользовательские исключения для анализатора реестра Windows
+ * @brief Пользовательские исключения для парсера реестра Windows
  * @details Содержит иерархию классов исключений для обработки ошибок при работе с реестром.
 */
 
@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 /**
  * @defgroup Exceptions

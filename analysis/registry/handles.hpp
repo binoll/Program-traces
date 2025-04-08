@@ -8,7 +8,7 @@
 
 #include <libregf.h>
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 /**
  * @class KeyHandle

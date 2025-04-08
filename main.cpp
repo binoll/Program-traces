@@ -1,62 +1,47 @@
-#include <ctime>
-#include <iomanip>
 #include <iostream>
-#include "prefetch_file_analysis/prefetch_file_parser.hpp"
-
-// Helper function to convert Windows FILETIME to time_t
-time_t filetime_to_timet(uint64_t filetime) {
-    if (filetime == 0) {
-        return 0;
-    }
-    // Convert 100-ns intervals to seconds since 1601-01-01
-    filetime /= 10000000ULL;
-    // Subtract difference between 1601 and 1970 (11644473600 seconds)
-    return static_cast<time_t>(filetime - 11644473600ULL);
-}
-
-void printPrefetchInfo(const PrefetchAnalysis::PrefetchData& info) {
-    std::cout << "Executable: " << info.executable_name() << "\n"
-              << "Prefetch Hash: 0x" << std::hex << info.prefetch_hash() << "\n"
-              << "Run Count: " << std::dec << info.run_count() << "\n\n"
-              << "Last Run Times:\n";
-
-    for (const auto& time : info.run_times()) {
-        std::cout << "  "
-                  << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S")
-                  << "\n";
-    }
-
-    std::cout << "\nVolumes:\n";
-    for (const auto& vol : info.volumes()) {
-        time_t creation_time = filetime_to_timet(vol.creation_time());
-        std::cout << "  Device: " << vol.device_path() << "\n"
-                  << "  Serial: 0x" << std::hex << vol.serial_number() << "\n"
-                  << "  Created: "
-                  << std::put_time(std::localtime(&creation_time), "%Y-%m-%d %H:%M:%S")
-                  << "\n\n";
-    }
-
-    std::cout << "Tracked Files:\n";
-    for (const auto& metric : info.metrics()) {
-        std::cout << "  " << metric.filename() << " [Ref: 0x" << std::hex
-                  << metric.file_reference() << "]\n";
-    }
-}
+#include "registry/registry_analyzer.hpp"
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <prefetch_file>\n";
-        return 1;
+  try {
+    RegistryAnalysis::RegistryParser analyzer;
+    std::string software_path(argv[1]);
+    software_path += "/Windows/System32/config/SOFTWARE";
+    analyzer.open(software_path);
+
+    const std::string version_key = "Microsoft/Windows NT/CurrentVersion";
+    auto values = analyzer.GetAllKeyValues(version_key);
+
+    // Сбор данных
+    std::string product_name, display_version, current_build;
+    int major_version = 0, minor_version = 0;
+
+    for (const auto& val : values) {
+      if (val.name == "ProductName")
+        product_name = val.data;
+      else if (val.name == "DisplayVersion")
+        display_version = val.data;
+      else if (val.name == "CurrentBuild")
+        current_build = val.data;
+      else if (val.name == "CurrentMajorVersionNumber")
+        major_version = std::stoi(val.data);
+      else if (val.name == "CurrentMinorVersionNumber")
+        minor_version = std::stoi(val.data);
     }
 
-    try {
-        PrefetchAnalysis::PrefetchParser parser;
-        PrefetchAnalysis::PrefetchData info = parser.parse(argv[1]);
-        printPrefetchInfo(info);
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 2;
-    }
+    // Определение версии
+    bool is_windows11 = (major_version >= 10 && minor_version >= 0 &&
+                         std::stoi(current_build) >= 22000);
 
-    return 0;
+    std::cout << "Информация о системе:\n"
+              << "  ProductName: " << product_name << "\n"
+              << "  DisplayVersion: " << display_version << "\n"
+              << "  CurrentBuild: " << current_build << "\n"
+              << "  Версия ОС: " << (is_windows11 ? "Windows 11" : "Windows 10")
+              << "\n";
+
+  } catch (const std::exception& e) {
+    std::cerr << "Ошибка: " << e.what() << "\n";
+    return 1;
+  }
+  return 0;
 }

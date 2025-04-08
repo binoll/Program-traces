@@ -13,7 +13,7 @@
 #include "interfaces.hpp"
 #include "models.hpp"
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 /**
  * @class RegistryParser

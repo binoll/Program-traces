@@ -14,7 +14,7 @@
 #include "handles.hpp"
 #include "models.hpp"
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 RegistryParser::Impl::Impl() {
   if (libregf_file_initialize(&file_, nullptr) != 1) {

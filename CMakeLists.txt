@@ -6,12 +6,14 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(
         Program_traces
         main.cpp
-        registry_analysis/registry_analyzer.cpp
+        analysis/registry/registry_parser.cpp
         logger/logger.cpp
-        prefetch_file_analysis/prefetch_file_parser.cpp
-        prefetch_file_analysis/prefetch_file_info.cpp
-        prefetch_file_analysis/info/volume.cpp
-        prefetch_file_analysis/info/file_metric.cpp
+        analysis/prefetch_file/prefetch_file_parser.cpp
+        analysis/prefetch_file/prefetch_file_info.cpp
+        analysis/prefetch_file/info/volume.cpp
+        analysis/prefetch_file/info/file_metric.cpp
+        analysis/registry/registry_parser.cpp
+        analysis/registry/handles.cpp
 )
 
 find_package(spdlog REQUIRED)

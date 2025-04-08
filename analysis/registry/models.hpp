@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <string>
 
-namespace RegistryAnalysis {
+namespace RegistryParser {
 
 /**
  * @struct RegistryValue
