@@ -1,53 +1,75 @@
 /**
-* @file PrefetchParser.h
- * @brief Заголовочный файл парсера Prefetch файлов
+* @file prefetch_parser.hpp
+ * @brief Заголовочный файл парсера Prefetch-файлов
  */
 
 #pragma once
 
-#include "prefetch_info.hpp"
 #include <libscca.h>
-#include <string>
+#include <memory>
+#include <stdexcept>
+#include "prefetch_info.hpp"
+
+namespace PrefetchAnalysis {
 
 /**
- * @brief Класс для работы с Prefetch файлами
+ * @brief Базовый класс для обработки ошибок
  */
-class PrefetchParser {
-public:
-  /**
-   * @brief Конструктор парсера
-   * @throws std::runtime_error при ошибке инициализации
-   */
-  PrefetchParser();
-
-  /**
-   * @brief Деструктор
-   */
-  ~PrefetchParser();
-
-  /**
-   * @brief Открыть и проанализировать Prefetch файл
-   * @param filePath Путь к файлу
-   * @return Информация из Prefetch файла
-   * @throws std::runtime_error при ошибке парсинга
-   */
-  PrefetchInfo parse(const std::string& filePath);
-
-private:
-  libscca_file_t* sccaFile;
-  libscca_error_t* sccaError;
-
-  /**
-   * @brief Преобразовать FILETIME в time_t
-   * @param filetime Время в формате FILETIME
-   * @return Время в формате time_t
-   */
-  time_t filetimeToTimeT(uint64_t filetime);
-
-  /**
-   * @brief Обработать ошибку libscca
-   * @param context Контекст ошибки
-   * @throws std::runtime_error с описанием ошибки
-   */
-  void handleError(const std::string& context);
+class ErrorHandler {
+ public:
+  virtual void handle(const std::string& context, libscca_error_t* error) = 0;
+  virtual ~ErrorHandler() = default;
 };
+
+/**
+ * @brief Реализация обработки ошибок через исключения
+ */
+class ExceptionErrorHandler : public ErrorHandler {
+ public:
+  void handle(const std::string& context, libscca_error_t* error) override {
+    char buffer[256];
+    if (error) {
+      libscca_error_sprint(error, buffer, sizeof(buffer));
+      throw std::runtime_error(context + ": " + buffer);
+    }
+    throw std::runtime_error(context);
+  }
+};
+
+/**
+ * @brief Основной класс парсера
+ */
+class Parser {
+ public:
+  Parser() {
+    initialize();
+  }
+
+  explicit Parser(std::unique_ptr<ErrorHandler> error_handler)
+      : error_handler_(std::move(error_handler)) {
+    initialize();
+  }
+
+  ~Parser() {
+    if (scca_file_) {
+      libscca_file_free(&scca_file_, nullptr);
+    }
+  }
+
+  PrefetchData parse(const std::string& path);
+
+ private:
+  void initialize();
+  void parse_basic_info(PrefetchData& data);
+  void parse_run_history(PrefetchData& data);
+  void parse_volumes(PrefetchData& data);
+  void parse_metrics(PrefetchData& data);
+  time_t convert_filetime_safe(uint64_t filetime);
+  std::string format_time_safe(time_t time);
+
+
+  libscca_file_t* scca_file_ = nullptr;
+  std::unique_ptr<ErrorHandler> error_handler_;
+};
+
+}  // namespace PrefetchAnalysis
