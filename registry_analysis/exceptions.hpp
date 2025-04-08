@@ -1,5 +1,5 @@
 /**
- * @file registry_analyzer_exceptions.hpp
+ * @file exceptions.hpp
  * @brief Пользовательские исключения для анализатора реестра Windows
  * @details Содержит иерархию классов исключений для обработки ошибок при работе с реестром.
 */
@@ -12,7 +12,7 @@
 namespace RegistryAnalysis {
 
 /**
- * @defgroup Exceptions Исключения
+ * @defgroup Exceptions
  * @brief Иерархия классов для обработки ошибок операций с реестром
 */
 
