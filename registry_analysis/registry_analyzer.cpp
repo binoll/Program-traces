@@ -1,7 +1,7 @@
 /**
  * @file registry_analyzer.cpp
  * @brief Реализация методов анализатора реестра
- */
+*/
 
 #include "registry_analyzer.hpp"
 #include <libregf.h>
@@ -12,7 +12,6 @@
 
 namespace RegistryAnalysis {
 
-/*-------------- Реализация KeyHandle --------------*/
 KeyHandle::KeyHandle(libregf_key_t* key) noexcept : ptr(key) {}
 
 KeyHandle::KeyHandle(KeyHandle&& other) noexcept : ptr(other.ptr) {
@@ -34,7 +33,7 @@ KeyHandle::~KeyHandle() {
     libregf_key_free(&ptr, nullptr);
 }
 
-/*-------------- Реализация ValueHandle --------------*/
+/*----------------------------------------------------------------------------*/
 ValueHandle::ValueHandle(libregf_value_t* value) noexcept : ptr(value) {}
 
 ValueHandle::ValueHandle(ValueHandle&& other) noexcept : ptr(other.ptr) {
@@ -56,7 +55,7 @@ ValueHandle::~ValueHandle() {
     libregf_value_free(&ptr, nullptr);
 }
 
-/*-------------- Реализация RegistryAnalyzer::Impl --------------*/
+/*----------------------------------------------------------------------------*/
 RegistryAnalyzer::Impl::Impl() {
   if (libregf_file_initialize(&file_, nullptr) != 1) {
     throw RegistryInitializationError();
@@ -245,7 +244,7 @@ void RegistryAnalyzer::Impl::ExtractBinary(libregf_value_t* value,
   output = oss.str();
 }
 
-/*-------------- Реализация RegistryAnalyzer --------------*/
+/*----------------------------------------------------------------------------*/
 RegistryAnalyzer::RegistryAnalyzer() : impl_(std::make_unique<Impl>()) {}
 
 RegistryAnalyzer::~RegistryAnalyzer() = default;
