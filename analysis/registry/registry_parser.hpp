@@ -16,21 +16,21 @@
 namespace RegistryParser {
 
 /**
- * @class RegistryParser
+ * @class Parser
  * @brief Основной класс для взаимодействия с файлами реестра
  * @implements IKeyValueProvider
  * @details Реализует интерфейс доступа к данным через PIMPL
 */
-class RegistryParser : public IKeyValueProvider {
+class Parser : public IKeyValueProvider {
  public:
   /**
    * @brief Конструктор по умолчанию
-   * @throw RegistryInitializationError При ошибке инициализации libregf
+   * @throw InitializationError При ошибке инициализации libregf
   */
-  RegistryParser();
+  Parser();
 
   /// @brief Виртуальный деструктор
-  ~RegistryParser() override;
+  ~Parser() override;
 
   /**
    * @brief Открыть файл реестра для анализа
@@ -47,7 +47,7 @@ class RegistryParser : public IKeyValueProvider {
    * @throw SubkeyNotFoundError Если ключ не существует
    * @throw RootKeyError При проблемах доступа к корневому разделу
   */
-  [[nodiscard]] std::vector<RegistryValue> getAllKeyValues(
+  [[nodiscard]] std::vector<Value> getAllKeyValues(
       const std::string& key_path) const override;
 
   /**
@@ -58,7 +58,7 @@ class RegistryParser : public IKeyValueProvider {
    * @throw ValueNotFoundError Если значение отсутствует
    * @throw BinaryDataReadError При ошибке чтения бинарных данных
   */
-  [[nodiscard]] RegistryValue getValueByName(
+  [[nodiscard]] Value getValueByName(
       const std::string& key_path,
       const std::string& value_name) const override;
 
@@ -74,15 +74,15 @@ class RegistryParser : public IKeyValueProvider {
 };
 
 /**
- * @class RegistryParser::Impl
+ * @class Parser::Impl
  * @brief Внутренняя реализация функционала анализатора
  * @details Инкапсулирует прямую работу с API libregf
 */
-class RegistryParser::Impl {
+class Parser::Impl {
  public:
   /**
    * @brief Конструктор внутренней реализации
-   * @throw RegistryInitializationError При ошибке создания файлового дескриптора
+   * @throw InitializationError При ошибке создания файлового дескриптора
   */
   Impl();
 
@@ -102,7 +102,7 @@ class RegistryParser::Impl {
    * @return Вектор значений
    * @throw SubkeyNotFoundError При невалидном пути
   */
-  [[nodiscard]] std::vector<RegistryValue> getAllKeyValues(
+  [[nodiscard]] std::vector<Value> getAllKeyValues(
       const std::string& key_path) const;
 
   /**
@@ -112,8 +112,8 @@ class RegistryParser::Impl {
    * @return Запрошенное значение
    * @throw ValueNotFoundError При отсутствии значения
   */
-  [[nodiscard]] RegistryValue getValueByName(
-      const std::string& key_path, const std::string& value_name) const;
+  [[nodiscard]] Value getValueByName(const std::string& key_path,
+                                     const std::string& value_name) const;
 
  private:
   /**
@@ -130,7 +130,7 @@ class RegistryParser::Impl {
    * @return Структура с данными
    * @throw ValueDataExtractionError При ошибке преобразования
   */
-  static RegistryValue extractValueData(libregf_value_t* value);
+  static Value extractValueData(libregf_value_t* value);
 
   /// @brief Извлечь строковое значение (REG_SZ, REG_EXPAND_SZ)
   static void extractString(libregf_value_t* value, std::string& output);

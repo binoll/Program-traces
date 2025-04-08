@@ -30,7 +30,7 @@ class IKeyValueProvider {
    * @throw SubkeyNotFoundError Если подраздел не найден
    * @throw RootKeyError Если корневой ключ недоступен
   */
-  [[nodiscard]] virtual std::vector<RegistryValue> getAllKeyValues(
+  [[nodiscard]] virtual std::vector<Value> getAllKeyValues(
       const std::string& key_path) const = 0;
 
   /**
@@ -41,7 +41,7 @@ class IKeyValueProvider {
    * @throw ValueNotFoundError Если значение отсутствует
    * @throw SubkeyNotFoundError Если ключ не существует
   */
-  [[nodiscard]] virtual RegistryValue getValueByName(
+  [[nodiscard]] virtual Value getValueByName(
       const std::string& key_path, const std::string& value_name) const = 0;
 };
 

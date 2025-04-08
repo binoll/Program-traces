@@ -16,29 +16,29 @@
 
 namespace RegistryParser {
 
-RegistryParser::Impl::Impl() {
+Parser::Impl::Impl() {
   if (libregf_file_initialize(&file_, nullptr) != 1) {
-    throw RegistryInitializationError();
+    throw InitializationError();
   }
 }
 
-RegistryParser::Impl::~Impl() {
+Parser::Impl::~Impl() {
   if (file_) {
     libregf_file_free(&file_, nullptr);
   }
 }
 
-void RegistryParser::Impl::open(const std::string& file_path) const {
+void Parser::Impl::open(const std::string& file_path) const {
   if (libregf_file_open(file_, file_path.c_str(), LIBREGF_OPEN_READ, nullptr) !=
       1) {
     throw FileOpenError(file_path);
   }
 }
 
-std::vector<RegistryValue> RegistryParser::Impl::getAllKeyValues(
+std::vector<Value> Parser::Impl::getAllKeyValues(
     const std::string& key_path) const {
   const KeyHandle key = resolveKeyPath(key_path);
-  std::vector<RegistryValue> values;
+  std::vector<Value> values;
 
   int value_count = 0;
   if (libregf_key_get_number_of_values(key.ptr_, &value_count, nullptr) != 1) {
@@ -56,7 +56,7 @@ std::vector<RegistryValue> RegistryParser::Impl::getAllKeyValues(
   return values;
 }
 
-RegistryValue RegistryParser::Impl::getValueByName(
+Value Parser::Impl::getValueByName(
     const std::string& key_path, const std::string& value_name) const {
   const KeyHandle key = resolveKeyPath(key_path);
   ValueHandle value;
@@ -70,7 +70,7 @@ RegistryValue RegistryParser::Impl::getValueByName(
   return extractValueData(value.ptr_);
 }
 
-KeyHandle RegistryParser::Impl::resolveKeyPath(const std::string& path) const {
+KeyHandle Parser::Impl::resolveKeyPath(const std::string& path) const {
   KeyHandle root_key;
   if (libregf_file_get_root_key(file_, &root_key.ptr_, nullptr) != 1) {
     throw RootKeyError();
@@ -113,8 +113,8 @@ KeyHandle RegistryParser::Impl::resolveKeyPath(const std::string& path) const {
   return final_key;
 }
 
-RegistryValue RegistryParser::Impl::extractValueData(libregf_value_t* value) {
-  RegistryValue result;
+Value Parser::Impl::extractValueData(libregf_value_t* value) {
+  Value result;
 
   // Извлечение имени значения
   size_t name_size = 0;
@@ -150,7 +150,7 @@ RegistryValue RegistryParser::Impl::extractValueData(libregf_value_t* value) {
   return result;
 }
 
-void RegistryParser::Impl::extractString(libregf_value_t* value,
+void Parser::Impl::extractString(libregf_value_t* value,
                                          std::string& output) {
   size_t data_size = 0;
   if (libregf_value_get_value_data_size(value, &data_size, nullptr) != 1 ||
@@ -170,7 +170,7 @@ void RegistryParser::Impl::extractString(libregf_value_t* value,
   }
 }
 
-void RegistryParser::Impl::extractDword(libregf_value_t* value,
+void Parser::Impl::extractDword(libregf_value_t* value,
                                         std::string& output) {
   uint32_t data = 0;
   if (libregf_value_get_value_32bit(value, &data, nullptr) == 1) {
@@ -178,7 +178,7 @@ void RegistryParser::Impl::extractDword(libregf_value_t* value,
   }
 }
 
-void RegistryParser::Impl::extractQword(libregf_value_t* value,
+void Parser::Impl::extractQword(libregf_value_t* value,
                                         std::string& output) {
   uint64_t data = 0;
   if (libregf_value_get_value_64bit(value, &data, nullptr) == 1) {
@@ -186,7 +186,7 @@ void RegistryParser::Impl::extractQword(libregf_value_t* value,
   }
 }
 
-void RegistryParser::Impl::extractBinary(libregf_value_t* value,
+void Parser::Impl::extractBinary(libregf_value_t* value,
                                          std::string& output) {
   size_t data_size = 0;
   if (libregf_value_get_value_data_size(value, &data_size, nullptr) != 1 ||
@@ -212,20 +212,20 @@ void RegistryParser::Impl::extractBinary(libregf_value_t* value,
   output = oss.str();
 }
 
-RegistryParser::RegistryParser() : impl_(std::make_unique<Impl>()) {}
+Parser::Parser() : impl_(std::make_unique<Impl>()) {}
 
-RegistryParser::~RegistryParser() = default;
+Parser::~Parser() = default;
 
-void RegistryParser::open(const std::string& file_path) const {
+void Parser::open(const std::string& file_path) const {
   impl_->open(file_path);
 }
 
-std::vector<RegistryValue> RegistryParser::getAllKeyValues(
+std::vector<Value> Parser::getAllKeyValues(
     const std::string& key_path) const {
   return impl_->getAllKeyValues(key_path);
 }
 
-RegistryValue RegistryParser::getValueByName(
+Value Parser::getValueByName(
     const std::string& key_path, const std::string& value_name) const {
   return impl_->getValueByName(key_path, value_name);
 }
