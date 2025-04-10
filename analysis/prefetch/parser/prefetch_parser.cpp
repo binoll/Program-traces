@@ -1,12 +1,12 @@
 /**
- * @file prefetch_file_parser.cpp
- * @brief Реализация парсера Prefetch-файлов
- */
+ * @file prefetch_parser.cpp
+ * @brief Реализация парсера Prefetch-файлов.
+*/
 
-#include "prefetch_file_parser.hpp"
-#include "../../logger/logger.hpp"
+#include "prefetch_parser.hpp"
 #include <sstream>
 #include <stdexcept>
+#include "../../../logger/logger.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -15,6 +15,7 @@ constexpr uint64_t FILETIME_MAX_VALID = 2650467744000000000ULL;
 
 PrefetchParser::PrefetchParser() : scca_handle_(nullptr) {
   try {
+    LOGGER->info("Инициализация парсера Prefetch файлов...");
     initialize();
   } catch (const std::exception& e) {
     throw FileOpenException(std::string("Ошибка инициализации: ") + e.what());
@@ -24,46 +25,57 @@ PrefetchParser::PrefetchParser() : scca_handle_(nullptr) {
 PrefetchParser::~PrefetchParser() noexcept {
   if (scca_handle_) {
     libscca_file_free(&scca_handle_, nullptr);
+    LOGGER->debug("Ресурсы для scca_handle_ освобождены");
   }
 }
 
 void PrefetchParser::initialize() {
+  LOGGER->debug("Инициализация библиотеки libscca...");
   if (libscca_file_initialize(&scca_handle_, nullptr) != 1) {
     throw FileOpenException("Ошибка инициализации libscca");
   }
+  LOGGER->info("Инициализация libscca выполнена успешно");
 }
 
-PrefetchData PrefetchParser::parse(const std::string& path) const {
+PrefetchDataBuilder PrefetchParser::parse(const std::string& path) const {
+  LOGGER->info("Начинаем парсинг Prefetch файла: {}", path);
+
   if (libscca_file_open(scca_handle_, path.c_str(), LIBSCCA_ACCESS_FLAG_READ,
                         nullptr) != 1) {
     throw FileOpenException("Не удалось открыть файл: " + path);
   }
 
-  PrefetchData data;
+  LOGGER->debug("Файл {} открыт успешно", path);
+
+  PrefetchDataBuilder data;
   try {
-    parse_basic_info(data);
-    parse_run_times(data);
-    parse_volumes(data);
-    parse_metrics(data);
+    parseBasicInfo(data);
+    parseRunTimes(data);
+    parseVolumes(data);
+    parseMetrics(data);
   } catch (...) {
     libscca_file_close(scca_handle_, nullptr);
     throw;
   }
 
   libscca_file_close(scca_handle_, nullptr);
+  LOGGER->info("Файл {} успешно закрыт", path);
   return data;
 }
 
-time_t PrefetchParser::convert_filetime(uint64_t filetime) {
+time_t PrefetchParser::convertFiletime(uint64_t filetime) {
   if (filetime < FILETIME_EPOCH_DIFF || filetime > FILETIME_MAX_VALID) {
     std::ostringstream oss;
     oss << "Недопустимое значение FILETIME: 0x" << std::hex << filetime;
+    LOGGER->warn(oss.str());
     throw InvalidTimestampException(oss.str());
   }
   return static_cast<time_t>((filetime - FILETIME_EPOCH_DIFF) / 10000000ULL);
 }
 
-void PrefetchParser::parse_basic_info(PrefetchData& data) const {
+void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& data) const {
+  LOGGER->debug("Чтение базовой информации о Prefetch файле...");
+
   char filename_buffer[256] = {0};
   size_t name_length = 0;
 
@@ -83,7 +95,8 @@ void PrefetchParser::parse_basic_info(PrefetchData& data) const {
   }
 
   try {
-    data.set_executable_name(filename_buffer);
+    data.setExecutableName(filename_buffer);
+    LOGGER->debug("Исполняемое имя файла: {}", filename_buffer);
   } catch (const InvalidExecutableNameException& e) {
     throw InvalidFormatException(e.what());
   }
@@ -93,39 +106,51 @@ void PrefetchParser::parse_basic_info(PrefetchData& data) const {
       1) {
     throw DataReadException("Ошибка чтения хеша файла");
   }
-  data.set_prefetch_hash(prefetch_hash);
+  data.setPrefetchHash(prefetch_hash);
+  LOGGER->debug("Хеш Prefetch файла: 0x{:x}", prefetch_hash);
 
   uint32_t run_count = 0;
   if (libscca_file_get_run_count(scca_handle_, &run_count, nullptr) != 1) {
     throw DataReadException("Ошибка чтения счетчика запусков");
   }
-  data.set_run_count(run_count);
+  data.setRunCount(run_count);
+  LOGGER->debug("Количество запусков: {}", run_count);
 }
 
-void PrefetchParser::parse_run_times(PrefetchData& data) const {
+void PrefetchParser::parseRunTimes(PrefetchDataBuilder& data) const {
+  LOGGER->debug("Чтение времен запусков...");
+
   for (int i = 0;; ++i) {
     uint64_t ft = 0;
-    if (libscca_file_get_last_run_time(scca_handle_, i, &ft, nullptr) != 1)
+    if (libscca_file_get_last_run_time(scca_handle_, i, &ft, nullptr) != 1) {
+      LOGGER->debug("Нет больше времени запуска на индексе {}", i);
       break;
+    }
 
     try {
-      data.add_run_time(convert_filetime(ft));
+      data.addRunTime(convertFiletime(ft));
+      LOGGER->debug("Добавлено время запуска: {}", ft);
     } catch (const InvalidTimestampException& e) {
-      LOGGER->debug(e.what());
+      LOGGER->debug("Неверный формат метки времени: {}", e.what());
     }
   }
 }
 
-void PrefetchParser::parse_volumes(PrefetchData& data) const {
+void PrefetchParser::parseVolumes(PrefetchDataBuilder& data) const {
+  LOGGER->debug("Чтение информации о томах...");
+
   int count = 0;
   if (libscca_file_get_number_of_volumes(scca_handle_, &count, nullptr) != 1) {
     throw DataReadException("Ошибка чтения количества томов");
   }
 
+  LOGGER->debug("Количество томов: {}", count);
+
   for (int i = 0; i < count; ++i) {
     libscca_volume_information_t* vol = nullptr;
     if (libscca_file_get_volume_information(scca_handle_, i, &vol, nullptr) !=
         1) {
+      LOGGER->warn("Не удалось получить информацию о томе на индексе {}", i);
       continue;
     }
 
@@ -149,7 +174,8 @@ void PrefetchParser::parse_volumes(PrefetchData& data) const {
         throw DataReadException("Ошибка чтения метаданных тома");
       }
 
-      data.add_volume(VolumeInfo(path, serial, create_time));
+      data.addVolume(VolumeInfo(path, serial, create_time));
+      LOGGER->debug("Добавлен том с путем: {}", path);
     } catch (...) {
       libscca_volume_information_free(&vol, nullptr);
       throw;
@@ -158,17 +184,22 @@ void PrefetchParser::parse_volumes(PrefetchData& data) const {
   }
 }
 
-void PrefetchParser::parse_metrics(PrefetchData& data) const {
+void PrefetchParser::parseMetrics(PrefetchDataBuilder& data) const {
+  LOGGER->debug("Чтение метрик файлов...");
+
   int count = 0;
   if (libscca_file_get_number_of_file_metrics_entries(scca_handle_, &count,
                                                       nullptr) != 1) {
     throw DataReadException("Ошибка чтения количества метрик");
   }
 
+  LOGGER->debug("Количество метрик: {}", count);
+
   for (int i = 0; i < count; ++i) {
     libscca_file_metrics_t* metric = nullptr;
     if (libscca_file_get_file_metrics_entry(scca_handle_, i, &metric,
                                             nullptr) != 1) {
+      LOGGER->warn("Не удалось получить метрику на индексе {}", i);
       continue;
     }
 
@@ -189,7 +220,8 @@ void PrefetchParser::parse_metrics(PrefetchData& data) const {
         throw InvalidFileMetricException("Ошибка чтения MFT-ссылки");
       }
 
-      data.add_metric(FileMetric(name, ref));
+      data.addMetric(FileMetric(name, ref));
+      LOGGER->debug("Добавлена метрика для файла: {}", name);
     } catch (...) {
       libscca_file_metrics_free(&metric, nullptr);
       throw;

@@ -7,13 +7,13 @@ add_executable(
         Program_traces
         main.cpp
         analysis/registry/registry_parser.cpp
-        logger/logger.cpp
-        analysis/prefetch_file/prefetch_file_parser.cpp
-        analysis/prefetch_file/prefetch_file_info.cpp
-        analysis/prefetch_file/info/volume.cpp
-        analysis/prefetch_file/info/file_metric.cpp
-        analysis/registry/registry_parser.cpp
         analysis/registry/handles.cpp
+        logger/logger.cpp
+        analysis/prefetch/parser/prefetch_parser.cpp
+        analysis/prefetch/metadata/file_metric.cpp
+        analysis/prefetch/metadata/volume_info.cpp
+        analysis/prefetch/model/prefetch_data.cpp
+        analysis/prefetch/model/prefetch_data_builder.cpp
 )
 
 find_package(spdlog REQUIRED)
