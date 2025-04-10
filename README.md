@@ -19,7 +19,7 @@ sudo apt update && sudo apt install doxygen -y
 2. Generate the documentation
 
 ```bash
-doxygen Doxyfile
+doxygen docs/Doxyfile
 ```
 
 ## Dependencies

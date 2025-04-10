@@ -1,7 +1,7 @@
 #include "logger.hpp"
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <filesystem>
-#include "logger_exceptions.hpp"
+#include "logger_exception.hpp"
 
 std::string GlobalLogger::logPath_ = "logs/app.log";
 std::shared_ptr<spdlog::logger> GlobalLogger::logger_ = nullptr;

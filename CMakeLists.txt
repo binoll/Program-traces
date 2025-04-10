@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
-project(Program_traces)
+project(program_traces)
 
 set(CMAKE_CXX_STANDARD 23)
 
 add_executable(
-        Program_traces
+        program_traces
         main.cpp
         analysis/prefetch/model/prefetch_data_builder.cpp
         analysis/prefetch/model/prefetch_data.cpp
@@ -33,7 +33,7 @@ endif ()
 message(STATUS "Найдена библиотека libregf: ${REGF_LIBRARY}")
 message(STATUS "Найдена библиотека libscca: ${SCCA_LIBRARY}")
 
-target_link_libraries(Program_traces
+target_link_libraries(program_traces
         spdlog::spdlog
         ${REGF_LIBRARY}
         ${SCCA_LIBRARY}
