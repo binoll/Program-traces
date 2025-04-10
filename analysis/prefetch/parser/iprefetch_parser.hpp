@@ -6,7 +6,7 @@
 #pragma once
 
 #include <string>
-#include "../exceptions/parsing_exception.hpp"
+#include "../../exceptions/general/parsing_exception.hpp"
 
 namespace PrefetchAnalysis {
 /**

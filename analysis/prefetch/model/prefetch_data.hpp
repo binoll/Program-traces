@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "../exceptions/prefetch_data_exception.hpp"
+#include "../../exceptions/prefetch/prefetch_data_exception.hpp"
 #include "../metadata/file_metric.hpp"
 #include "../metadata/volume_info.hpp"
 #include "iprefetch_data.hpp"

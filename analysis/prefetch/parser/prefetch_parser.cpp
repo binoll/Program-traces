@@ -6,7 +6,7 @@
 #include "prefetch_parser.hpp"
 #include <sstream>
 #include <stdexcept>
-#include "../../../logger/logger.hpp"
+#include "../../../utils/logger/logger.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -14,12 +14,12 @@ constexpr uint64_t FILETIME_EPOCH_DIFF = 116444736000000000ULL;
 constexpr uint64_t FILETIME_MAX_VALID = 2650467744000000000ULL;
 
 PrefetchParser::PrefetchParser() : scca_handle_(nullptr) {
-  try {
-    LOGGER->info("Инициализация парсера Prefetch файлов...");
-    initialize();
-  } catch (const std::exception& e) {
-    throw FileOpenException(std::string("Ошибка инициализации: ") + e.what());
+  LOGGER->info("Инициализация парсера Prefetch файлов...");
+  LOGGER->debug("Инициализация библиотеки libscca...");
+  if (libscca_file_initialize(&scca_handle_, nullptr) != 1) {
+    throw InitLibError("libscca");
   }
+  LOGGER->info("Инициализация libscca выполнена успешно");
 }
 
 PrefetchParser::~PrefetchParser() noexcept {
@@ -27,14 +27,6 @@ PrefetchParser::~PrefetchParser() noexcept {
     libscca_file_free(&scca_handle_, nullptr);
     LOGGER->debug("Ресурсы для scca_handle_ освобождены");
   }
-}
-
-void PrefetchParser::initialize() {
-  LOGGER->debug("Инициализация библиотеки libscca...");
-  if (libscca_file_initialize(&scca_handle_, nullptr) != 1) {
-    throw FileOpenException("Ошибка инициализации libscca");
-  }
-  LOGGER->info("Инициализация libscca выполнена успешно");
 }
 
 PrefetchDataBuilder PrefetchParser::parse(const std::string& path) const {

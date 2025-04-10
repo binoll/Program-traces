@@ -6,7 +6,6 @@
 #pragma once
 
 #include <ctime>
-#include <memory>
 #include <string>
 #include <vector>
 #include "../metadata/file_metric.hpp"

@@ -12,6 +12,7 @@
 namespace PrefetchAnalysis {
 
 /**
+ * @class VolumeException
  * @brief Базовый класс для всех исключений, связанных с ошибками работы с томами.
  * @details Этот класс является базой для всех исключений, которые происходят в контексте работы с томами и устройствами.
 */
@@ -33,6 +34,7 @@ class VolumeException : public std::runtime_error {
 };
 
 /**
+ * @class InvalidDevicePathException
  * @brief Исключение для некорректного пути к устройству.
  * @details Генерируется при обнаружении невалидного пути в формате NT (например, "\Device\HarddiskVolumeX").
 */

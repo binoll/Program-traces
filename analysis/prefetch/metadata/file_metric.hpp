@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <string>
-#include "../exceptions/file_metric_exception.hpp"
+#include "../../exceptions/prefetch/file_metric_exception.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -20,6 +20,7 @@ namespace PrefetchAnalysis {
 [[nodiscard]] static bool is_valid(const std::string& path) noexcept;
 
 /**
+ * @class FileMetric
  * @brief Контейнер для метаданных файла NTFS.
  * @details Класс инкапсулирует метаданные файла NTFS, включая путь к файлу и ссылку на его запись в MFT.
  *          Обеспечивает методы для получения пути и MFT-идентификатора.

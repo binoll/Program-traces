@@ -12,6 +12,7 @@
 namespace PrefetchAnalysis {
 
 /**
+ * @class FileMetricException
  * @brief Базовый класс для ошибок работы с файловыми метриками.
  * @details Все исключения, связанные с обработкой метрик файлов, наследуются от этого класса.
 */
@@ -33,6 +34,7 @@ class FileMetricException : public std::runtime_error {
 };
 
 /**
+ * @class InvalidFileMetricException
  * @brief Исключение для некорректных параметров файла.
  * @details Генерируется, если:
  *          - Нарушен формат имени файла.

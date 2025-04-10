@@ -8,8 +8,7 @@
 #include <libscca.h>
 #include <ctime>
 #include <string>
-
-#include "../exceptions/parsing_exception.hpp"
+#include "../../exceptions/general/parsing_exception.hpp"
 #include "../model/prefetch_data.hpp"
 #include "../model/prefetch_data_builder.hpp"
 #include "iprefetch_parser.hpp"
@@ -47,12 +46,6 @@ class PrefetchParser : public IPrefetchParser {
       const std::string& path) const override;
 
  private:
-  /**
-   * @brief Инициализирует внутренние структуры для работы с библиотекой `libscca`.
-   * @throw FileOpenException При ошибке инициализации библиотеки `libscca`.
-  */
-  void initialize();
-
   /**
    * @brief Парсит основную информацию о приложении из Prefetch-файла.
    * @param data Объект `PrefetchDataBuilder`, в который будет записана распарсенная информация.

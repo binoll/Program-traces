@@ -9,9 +9,22 @@
 #include <stdexcept>
 #include <string>
 
-namespace PrefetchAnalysis {
+/**
+ * @class InitLibError
+ * @brief Исключение для ошибок инициализации библиотек.
+ * @details Этот класс генерируется при ошибках, возникающих на этапе инициализации библиотек.
+*/
+class InitLibError : public std::runtime_error {
+ public:
+  /**
+   * @brief Конструктор исключения для ошибки инициализации.
+  */
+  explicit InitLibError(const std::string& lib)
+      : std::runtime_error("Ошибка инициализации бибилиотеки: " + lib) {}
+};
 
 /**
+ * @class ParsingException
  * @brief Базовый класс для ошибок парсинга данных.
  * @details Этот класс является базой для всех исключений, которые происходят на разных этапах парсинга.
 */
@@ -33,6 +46,7 @@ class ParsingException : public std::runtime_error {
 };
 
 /**
+ * @class FileOpenException
  * @brief Исключение для ошибок открытия файла.
  * @details Генерируется при:
  *          - Отсутствии файла по указанному пути.
@@ -51,6 +65,7 @@ class FileOpenException : public ParsingException {
 };
 
 /**
+ * @class InvalidFormatException
  * @brief Исключение для некорректного формата данных.
  * @details Генерируется при нарушении структуры данных в файле.
 */
@@ -66,6 +81,7 @@ class InvalidFormatException : public ParsingException {
 };
 
 /**
+ * @class DataReadException
  * @brief Исключение для ошибок чтения данных.
  * @details Возникает при сбоях операций ввода-вывода.
 */
@@ -81,6 +97,7 @@ class DataReadException : public std::runtime_error {
 };
 
 /**
+ * @class InvalidTimestampException
  * @brief Исключение для некорректной временной метки.
  * @details Генерируется при:
  *          - Времени до эпохи UNIX (01.01.1970).
@@ -96,5 +113,3 @@ class InvalidTimestampException : public std::runtime_error {
   explicit InvalidTimestampException(const std::string& details)
       : std::runtime_error("Некорректная временная метка: " + details) {}
 };
-
-}

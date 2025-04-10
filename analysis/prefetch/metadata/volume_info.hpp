@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <string>
-#include "../exceptions/volume_exception.hpp"
+#include "../../exceptions/prefetch/volume_exception.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -20,6 +20,7 @@ namespace PrefetchAnalysis {
 [[nodiscard]] static bool is_valid(const std::string& path) noexcept;
 
 /**
+ * @class VolumeInfo
  * @brief Хранилище метаданных логического тома.
  * @details Этот класс инкапсулирует информацию о логическом томе, включая:
  *          - Путь к устройству в формате NT.

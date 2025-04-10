@@ -1,5 +1,5 @@
 /**
- * @file prefetch_data_exception.hpp
+ * @file data_exception.hpp
  * @brief Исключения для обработки данных Prefetch.
  * @details Этот файл содержит исключения для обработки ошибок, возникающих при анализе данных Prefetch.
 */
@@ -12,6 +12,7 @@
 namespace PrefetchAnalysis {
 
 /**
+ * @class PrefetchDataException
  * @brief Базовый класс для ошибок, связанных с обработкой данных Prefetch.
  * @details Этот класс является базой для всех исключений, которые происходят при анализе данных Prefetch.
 */
@@ -33,6 +34,7 @@ class PrefetchDataException : public std::runtime_error {
 };
 
 /**
+ * @class InvalidExecutableNameException
  * @brief Исключение для некорректного имени исполняемого файла.
  * @details Генерируется при:
  *          - Пустом имени файла.
