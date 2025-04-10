@@ -6,6 +6,22 @@ Program traces
 The program extracts traces of software startup
 from the Windows operating system
 
+## Documentation
+
+To create the documentation, follow these steps:
+
+1. Install doxygen
+
+```bash
+sudo apt update && sudo apt install doxygen -y
+```
+
+2. Generate the documentation
+
+```bash
+doxygen -g
+```
+
 ## Dependencies
 
 ### Installing common dependencies
