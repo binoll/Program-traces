@@ -1,8 +1,3 @@
-/**
- * @file volume_info.cpp
- * @brief Реализация классов для работы с метаданными логических томов
- */
-
 #include "volume_info.hpp"
 
 namespace PrefetchAnalysis {
