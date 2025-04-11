@@ -1,6 +1,6 @@
 /**
  * @file volume_info.hpp
- * @brief Заголовочный файл класса VolumeInfo для работы с метаданными томов
+ * @brief Заголовочный файл, содержащий класс для работы с метаданными томов
  */
 
 #pragma once
@@ -41,6 +41,8 @@ class VolumeInfo final {
   static constexpr uint32_t VOLUME_TYPE_RAMDISK = 0x10;  ///< RAM-диск
   /// @}
 
+  /// @name Основные методы класса
+  /// @{
   /**
    * @brief Конструктор с полной инициализацией метаданных тома
    * @param[in] device_path NT-путь к устройству
@@ -55,9 +57,10 @@ class VolumeInfo final {
              uint64_t size = 0, uint32_t type = VOLUME_TYPE_FIXED);
 
   /**
-   * @brief Деструктор
+   * @brief Деструктор по умолчанию
    */
   ~VolumeInfo() = default;
+  /// @}
 
   /// @name Базовые методы доступа
   /// @{

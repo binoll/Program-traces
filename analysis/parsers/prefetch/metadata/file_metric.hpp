@@ -43,6 +43,8 @@ class FileMetric final {
       0x04;  ///< Файл был исполнен
   /// @}
 
+  /// @name Основные методы класса
+  /// @{
   /**
    * @brief Конструктор с инициализацией всех полей
    * @param[in] filename Полный путь к файлу в формате NTFS
@@ -59,9 +61,10 @@ class FileMetric final {
              uint32_t access_flags = 0, uint64_t last_access_time = 0);
 
   /**
-   * @brief Деструктор
+   * @brief Деструктор по умолчанию
    */
   ~FileMetric() = default;
+  /// @}
 
   /// @name Базовые методы доступа
   /// @{
