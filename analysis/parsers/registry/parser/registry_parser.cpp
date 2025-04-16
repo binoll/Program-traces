@@ -9,8 +9,8 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
-#include "../../../utils/logger/logger.hpp"
-#include "../../exceptions/general/parsing_exception.hpp"
+#include "../../../../utils/logger/logger.hpp"
+#include "../../../exceptions/general/parsing_exception.hpp"
 #include "../handle/value_handle.hpp"
 #include "../model/registry_value.hpp"
 

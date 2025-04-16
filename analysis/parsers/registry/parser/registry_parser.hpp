@@ -10,7 +10,7 @@
 #include <libregf.h>
 #include <string>
 #include <vector>
-#include "../../exceptions/registry/registry_exception.hpp"
+#include "../../../exceptions/registry/registry_exception.hpp"
 #include "../handle/key_handle.hpp"
 #include "iregistry_parser.hpp"
 

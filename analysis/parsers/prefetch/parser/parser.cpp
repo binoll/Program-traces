@@ -1,12 +1,9 @@
-/**
- * @file prefetch_parser.cpp
- * @brief Реализация парсера Prefetch-файлов.
-*/
+#include "parser.hpp"
 
-#include "prefetch_parser.hpp"
 #include <sstream>
 #include <stdexcept>
-#include "../../../utils/logger/logger.hpp"
+
+#include "../../../../utils/logger/logger.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -29,7 +26,8 @@ PrefetchParser::~PrefetchParser() noexcept {
   }
 }
 
-PrefetchDataBuilder PrefetchParser::parse(const std::string& path) const {
+std::unique_ptr<IPrefetchData> PrefetchParser::parse(
+    const std::string& path) const {
   LOGGER->info("Начинаем парсинг Prefetch файла: {}", path);
 
   if (libscca_file_open(scca_handle_, path.c_str(), LIBSCCA_ACCESS_FLAG_READ,
@@ -47,12 +45,11 @@ PrefetchDataBuilder PrefetchParser::parse(const std::string& path) const {
     parseMetrics(data);
   } catch (...) {
     libscca_file_close(scca_handle_, nullptr);
-    throw;
   }
 
   libscca_file_close(scca_handle_, nullptr);
   LOGGER->info("Файл {} успешно закрыт", path);
-  return data;
+  return data.build();
 }
 
 time_t PrefetchParser::convertFiletime(uint64_t filetime) {
@@ -71,22 +68,22 @@ void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& data) const {
   char filename_buffer[256] = {0};
   size_t name_length = 0;
 
-  if (libscca_file_get_utf8_executable_filename_size(scca_handle_, &name_length,
-                                                     nullptr) != 1) {
-    throw DataReadException("Не удалось получить размер имени файла");
-  }
-
-  if (name_length == 0 || name_length > sizeof(filename_buffer)) {
-    throw InvalidFormatException("Некорректная длина имени файла");
-  }
-
-  if (libscca_file_get_utf8_executable_filename(
-          scca_handle_, reinterpret_cast<uint8_t*>(filename_buffer),
-          name_length, nullptr) != 1) {
-    throw DataReadException("Ошибка чтения имени файла");
-  }
-
   try {
+    if (libscca_file_get_utf8_executable_filename_size(
+            scca_handle_, &name_length, nullptr) != 1) {
+      throw DataReadException("Не удалось получить размер имени файла");
+    }
+
+    if (name_length == 0 || name_length > sizeof(filename_buffer)) {
+      throw InvalidFormatException("Некорректная длина имени файла");
+    }
+
+    if (libscca_file_get_utf8_executable_filename(
+            scca_handle_, reinterpret_cast<uint8_t*>(filename_buffer),
+            name_length, nullptr) != 1) {
+      throw DataReadException("Ошибка чтения имени файла");
+    }
+
     data.setExecutableName(filename_buffer);
     LOGGER->debug("Исполняемое имя файла: {}", filename_buffer);
   } catch (const InvalidExecutableNameException& e) {
@@ -112,7 +109,9 @@ void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& data) const {
 void PrefetchParser::parseRunTimes(PrefetchDataBuilder& data) const {
   LOGGER->debug("Чтение времен запусков...");
 
-  for (int i = 0;; ++i) {
+  std::vector<uint64_t> valid_times;
+
+  for (uint32_t i = 0;; ++i) {
     uint64_t ft = 0;
     if (libscca_file_get_last_run_time(scca_handle_, i, &ft, nullptr) != 1) {
       LOGGER->debug("Нет больше времени запуска на индексе {}", i);
@@ -120,11 +119,23 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& data) const {
     }
 
     try {
-      data.addRunTime(convertFiletime(ft));
+      const time_t unix_time = convertFiletime(ft);
+      data.addRunTime(unix_time);
+      valid_times.push_back(ft);
       LOGGER->debug("Добавлено время запуска: {}", ft);
     } catch (const InvalidTimestampException& e) {
       LOGGER->debug("Неверный формат метки времени: {}", e.what());
     }
+  }
+
+  if (!valid_times.empty()) {
+    uint64_t last_run_time =
+        *std::max_element(valid_times.begin(), valid_times.end());
+    const time_t unix_time = convertFiletime(last_run_time);
+    data.setLastRunTime(unix_time);
+    LOGGER->debug("Последнее время запуска установлено: {}", last_run_time);
+  } else {
+    LOGGER->debug("Не найдено корректных временных меток запуска.");
   }
 }
 

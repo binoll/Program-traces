@@ -18,6 +18,23 @@ VolumeInfo::VolumeInfo(std::string device_path, uint32_t serial,
   }
 }
 
+bool VolumeInfo::isValid() const noexcept {
+  if (!is_valid(device_path_)) {
+    return false;
+  }
+
+  constexpr uint32_t valid_types = VOLUME_TYPE_FIXED | VOLUME_TYPE_REMOVABLE |
+                                   VOLUME_TYPE_NETWORK | VOLUME_TYPE_OPTICAL |
+                                   VOLUME_TYPE_RAMDISK;
+  if ((volume_type_ & valid_types) == 0) {
+    return false;
+  }
+  if (serial_number_ == 0) {
+    return false;
+  }
+  return true;
+}
+
 const std::string& VolumeInfo::getDevicePath() const noexcept {
   return device_path_;
 }
