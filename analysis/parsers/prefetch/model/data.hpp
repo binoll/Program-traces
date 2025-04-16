@@ -51,6 +51,8 @@ class PrefetchData : public IPrefetchData {
   [[nodiscard]] uint32_t getRunCount() const noexcept override;
   /// @}
 
+  [[nodiscard]] uint8_t getFormatVersion() const noexcept override;
+
   /// @name Методы работы с временными данными
   /// @{
   /// @copydoc IPrefetchData::getRunTimes
@@ -88,9 +90,6 @@ class PrefetchData : public IPrefetchData {
 
   /// @copydoc IPrefetchData::getWindowsVersionString
   [[nodiscard]] std::string getWindowsVersionString() const noexcept override;
-
-  /// @copydoc IPrefetchData::getFormatVersion
-  [[nodiscard]] uint8_t getFormatVersion() const noexcept override;
   /// @}
 
  private:

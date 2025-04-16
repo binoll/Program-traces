@@ -121,8 +121,9 @@ WindowsVersion PrefetchData::getWindowsVersion() const noexcept {
       return WindowsVersion::UNKNOWN;
   }
 }
+
 std::string PrefetchData::getWindowsVersionString() const noexcept {
-  return std::string(WindowsVersionToString(getWindowsVersion()));
+  return storage_.windows_version;
 }
 
 }

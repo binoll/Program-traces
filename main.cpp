@@ -1,7 +1,8 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include "analysis/prefetch/parser/prefetch_parser.hpp"
+
+#include "analysis/parsers/prefetch/parser/parser.hpp"
 
 // Helper function to convert Windows FILETIME to time_t
 time_t filetime_to_timet(uint64_t filetime) {
@@ -15,10 +16,14 @@ time_t filetime_to_timet(uint64_t filetime) {
 }
 
 void printPrefetchInfo(const PrefetchAnalysis::IPrefetchData& info) {
+  time_t last_time = info.getLastRunTime();
+
   std::cout << "Executable: " << info.getExecutableName() << "\n"
             << "Prefetch Hash: 0x" << std::hex << info.getPrefetchHash() << "\n"
             << "Run Count: " << std::dec << info.getRunCount() << "\n\n"
-            << "Last Run Times:\n";
+            << "Last Run Times:\n"
+            << std::put_time(std::localtime(&last_time), "%Y-%m-%d %H:%M:%S\n")
+            << "Run Times:\n";
 
   for (const auto& time : info.getRunTimes()) {
     std::cout << "  "
@@ -42,6 +47,8 @@ void printPrefetchInfo(const PrefetchAnalysis::IPrefetchData& info) {
     std::cout << "  " << metric.getFilename() << " [Ref: 0x" << std::hex
               << metric.getFileReference() << "]\n";
   }
+
+  std::cout << "\nWindows version: " << info.getWindowsVersionString() << "\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -54,9 +61,10 @@ int main(int argc, char* argv[]) {
     // Создание объекта парсера Prefetch
     PrefetchAnalysis::PrefetchParser parser;
 
-    // Парсинг данных из файла и получение уникального указателя на IPrefetchData
+    // Парсинг данных из файла и получение уникального указателя на
+    // IPrefetchData
     std::unique_ptr<PrefetchAnalysis::IPrefetchData> info =
-        parser.parse(argv[1]).build();
+        parser.parse(argv[1]);
 
     // Вывод информации о Prefetch
     printPrefetchInfo(*info);

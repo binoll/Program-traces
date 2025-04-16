@@ -23,16 +23,6 @@ bool FileMetric::isValid() const noexcept {
   if (!is_valid(filename_)) {
     return false;
   }
-
-  constexpr uint32_t valid_flags = FILE_METRIC_ACCESS_READ |
-                                   FILE_METRIC_ACCESS_WRITE |
-                                   FILE_METRIC_ACCESS_EXECUTE;
-  if ((access_flags_ & ~valid_flags) != 0) {
-    return false;
-  }
-  if (file_reference_ == 0) {
-    return false;
-  }
   return true;
 }
 

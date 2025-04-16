@@ -113,6 +113,8 @@ class PrefetchDataBuilder {
   [[nodiscard]] std::unique_ptr<IPrefetchData> build();
   /// @}
 
+  PrefetchDataBuilder& setWindowsVersion(uint8_t format_version) noexcept;
+
  private:
   PrefetchDataStorage storage_;  ///< Хранилище данных Prefetch-файла
 };

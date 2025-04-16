@@ -6,14 +6,14 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(
         program_traces
         main.cpp
-        analysis/prefetch/model/prefetch_data_builder.cpp
-        analysis/prefetch/model/prefetch_data.cpp
-        analysis/prefetch/metadata/volume_info.cpp
-        analysis/prefetch/metadata/file_metric.cpp
-        analysis/prefetch/parser/prefetch_parser.cpp
-        analysis/registry/parser/registry_parser.cpp
-        analysis/registry/handle/key_handle.cpp
-        analysis/registry/handle/value_handle.cpp
+        analysis/parsers/prefetch/model/data.cpp
+        analysis/parsers/prefetch/model/data_builder.cpp
+        analysis/parsers/prefetch/metadata/file_metric.cpp
+        analysis/parsers/prefetch/metadata/volume_info.cpp
+        analysis/parsers/prefetch/parser/parser.cpp
+        analysis/parsers/registry/parser/registry_parser.cpp
+        analysis/parsers/registry/handle/key_handle.cpp
+        analysis/parsers/registry/handle/value_handle.cpp
         utils/logger/logger.cpp
 )
 

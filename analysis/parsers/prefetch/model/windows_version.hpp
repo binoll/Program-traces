@@ -112,4 +112,8 @@ inline std::string_view WindowsVersionToString(
   }
 }
 
+inline std::string_view WindowsVersionToString(uint8_t version) noexcept {
+  return WindowsVersionToString(static_cast<WindowsVersion>(version));
+}
+
 }

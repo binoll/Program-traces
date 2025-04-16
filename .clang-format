@@ -1,0 +1,3 @@
+BasedOnStyle: Google
+CommentPragmas: '^ noautocomment$'
+FixNamespaceComments: false

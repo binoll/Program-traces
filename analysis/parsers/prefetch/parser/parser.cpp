@@ -6,7 +6,6 @@
 #include "../../../../utils/logger/logger.hpp"
 
 namespace PrefetchAnalysis {
-
 constexpr uint64_t FILETIME_EPOCH_DIFF = 116444736000000000ULL;
 constexpr uint64_t FILETIME_MAX_VALID = 2650467744000000000ULL;
 
@@ -52,16 +51,6 @@ std::unique_ptr<IPrefetchData> PrefetchParser::parse(
   return data.build();
 }
 
-time_t PrefetchParser::convertFiletime(uint64_t filetime) {
-  if (filetime < FILETIME_EPOCH_DIFF || filetime > FILETIME_MAX_VALID) {
-    std::ostringstream oss;
-    oss << "Недопустимое значение FILETIME: 0x" << std::hex << filetime;
-    LOGGER->warn(oss.str());
-    throw InvalidTimestampException(oss.str());
-  }
-  return static_cast<time_t>((filetime - FILETIME_EPOCH_DIFF) / 10000000ULL);
-}
-
 void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& data) const {
   LOGGER->debug("Чтение базовой информации о Prefetch файле...");
 
@@ -104,6 +93,16 @@ void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& data) const {
   }
   data.setRunCount(run_count);
   LOGGER->debug("Количество запусков: {}", run_count);
+
+  uint32_t format_version = 0;
+  if (libscca_file_get_format_version(scca_handle_, &format_version, nullptr) !=
+      1) {
+    throw DataReadException("Ошибка чтения версии формата Prefetch файла");
+  }
+  data.setFormatVersion(format_version);
+  LOGGER->debug("Версия формата Prefetch файла: {}", format_version);
+
+  data.setWindowsVersion(format_version);
 }
 
 void PrefetchParser::parseRunTimes(PrefetchDataBuilder& data) const {
@@ -116,6 +115,10 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& data) const {
     if (libscca_file_get_last_run_time(scca_handle_, i, &ft, nullptr) != 1) {
       LOGGER->debug("Нет больше времени запуска на индексе {}", i);
       break;
+    }
+
+    if (ft == 0) {
+      continue;
     }
 
     try {
@@ -231,6 +234,15 @@ void PrefetchParser::parseMetrics(PrefetchDataBuilder& data) const {
     }
     libscca_file_metrics_free(&metric, nullptr);
   }
+}
+
+time_t PrefetchParser::convertFiletime(uint64_t filetime) {
+  if (filetime < FILETIME_EPOCH_DIFF || filetime > FILETIME_MAX_VALID) {
+    std::ostringstream oss;
+    oss << "Недопустимое значение FILETIME: 0x" << std::hex << filetime;
+    LOGGER->warn(oss.str());
+  }
+  return static_cast<time_t>((filetime - FILETIME_EPOCH_DIFF) / 10000000ULL);
 }
 
 }

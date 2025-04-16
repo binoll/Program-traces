@@ -71,6 +71,12 @@ PrefetchDataBuilder& PrefetchDataBuilder::setFormatVersion(
   return *this;
 }
 
+PrefetchDataBuilder& PrefetchDataBuilder::setWindowsVersion(
+    uint8_t format_version) noexcept {
+  storage_.windows_version = WindowsVersionToString(format_version);
+  return *this;
+}
+
 PrefetchDataBuilder& PrefetchDataBuilder::setLastRunTime(
     uint64_t last_run_time) noexcept {
   storage_.last_run_time = last_run_time;
