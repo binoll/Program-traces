@@ -11,8 +11,6 @@
 
 #include "../metadata/file_metric.hpp"
 #include "../metadata/volume_info.hpp"
-#include "data_storage.hpp"
-#include "windows_version.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -103,22 +101,6 @@ class IPrefetchData {
    */
   [[nodiscard]] virtual std::vector<FileMetric> getDllMetrics() const = 0;
   /// @}
-
-  /// @name Методы определения версий
-  /// @{
-  /**
-   * @brief Получить версию Windows в виде перечисления
-   * @return Значение перечисления WindowsVersion
-   * @deprecated Предпочтительно использовать getWindowsVersionString()
-   */
-  [[nodiscard]] virtual WindowsVersion getWindowsVersion() const noexcept = 0;
-
-  /**
-   * @brief Получить строковое представление версии Windows
-   * @return Строковое название версии Windows
-   */
-  [[nodiscard]] virtual std::string getWindowsVersionString()
-      const noexcept = 0;
 
   /**
    * @brief Получить номер версии формата Prefetch

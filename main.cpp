@@ -21,12 +21,12 @@ void printPrefetchInfo(const PrefetchAnalysis::IPrefetchData& info) {
   std::cout << "Executable: " << info.getExecutableName() << "\n"
             << "Prefetch Hash: 0x" << std::hex << info.getPrefetchHash() << "\n"
             << "Run Count: " << std::dec << info.getRunCount() << "\n\n"
-            << "Last Run Times:\n"
+            << "Last Run Times: "
             << std::put_time(std::localtime(&last_time), "%Y-%m-%d %H:%M:%S\n")
-            << "Run Times:\n";
+            << "Run Times:";
 
   for (const auto& time : info.getRunTimes()) {
-    std::cout << "  "
+    std::cout << " "
               << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S")
               << "\n";
   }
@@ -47,8 +47,6 @@ void printPrefetchInfo(const PrefetchAnalysis::IPrefetchData& info) {
     std::cout << "  " << metric.getFilename() << " [Ref: 0x" << std::hex
               << metric.getFileReference() << "]\n";
   }
-
-  std::cout << "\nWindows version: " << info.getWindowsVersionString() << "\n";
 }
 
 int main(int argc, char* argv[]) {

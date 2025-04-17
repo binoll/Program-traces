@@ -101,8 +101,6 @@ void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& data) const {
   }
   data.setFormatVersion(format_version);
   LOGGER->debug("Версия формата Prefetch файла: {}", format_version);
-
-  data.setWindowsVersion(format_version);
 }
 
 void PrefetchParser::parseRunTimes(PrefetchDataBuilder& data) const {

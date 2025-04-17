@@ -15,7 +15,6 @@
 #include "../metadata/volume_info.hpp"
 #include "data_storage.hpp"
 #include "idata.hpp"
-#include "windows_version.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -81,15 +80,6 @@ class PrefetchData : public IPrefetchData {
 
   /// @copydoc IPrefetchData::getDllMetrics
   [[nodiscard]] std::vector<FileMetric> getDllMetrics() const override;
-  /// @}
-
-  /// @name Методы определения версий
-  /// @{
-  /// @copydoc IPrefetchData::getWindowsVersion
-  [[nodiscard]] WindowsVersion getWindowsVersion() const noexcept override;
-
-  /// @copydoc IPrefetchData::getWindowsVersionString
-  [[nodiscard]] std::string getWindowsVersionString() const noexcept override;
   /// @}
 
  private:

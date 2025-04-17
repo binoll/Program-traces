@@ -115,7 +115,7 @@ class RegistryParser : public IRegistryParser {
   /**
    * @brief Указатель на файл реестра, открытый через libregf.
   */
-  libregf_file_t* file_;
+  libregf_file_t* file_{};
 };
 
 }
