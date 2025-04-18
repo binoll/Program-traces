@@ -16,7 +16,7 @@ namespace PrefetchAnalysis {
 /**
  * @struct PrefetchDataStorage
  * @brief Чистый контейнер для данных Prefetch-файла
- * @details Содержит все поля, необходимые для создания PrefetchData. Может
+ * @note Содержит все поля, необходимые для создания PrefetchData. Может
  * использоваться как строителем, так и другими фабриками
  */
 struct PrefetchDataStorage {
@@ -32,8 +32,8 @@ struct PrefetchDataStorage {
       metrics;  ///< Список файлов и соответствующих метрик использования
   uint8_t format_version =
       0;  ///< Версия формата Prefetch-файла (например, 17, 23, 26)
-  uint64_t last_run_time =
-      0;  ///< FILETIME последнего запуска в 64-битном формате
+  time_t last_run_time =
+      0;  ///< UNIX-время последнего запуска
 };
 
 }

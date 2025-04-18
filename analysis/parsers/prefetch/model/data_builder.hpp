@@ -68,10 +68,10 @@ class PrefetchDataBuilder {
 
   /**
    * @brief Устанавливает время последнего запуска
-   * @param last_run_time Время в формате FILETIME
+   * @param last_run_time Время в формате UNIX
    * @return Ссылка на текущий объект строителя
    */
-  PrefetchDataBuilder& setLastRunTime(uint64_t last_run_time) noexcept;
+  PrefetchDataBuilder& setLastRunTime(time_t last_run_time) noexcept;
   /// @}
 
   /// @name Методы добавления элементов коллекций

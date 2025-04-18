@@ -18,7 +18,7 @@ class IPrefetchParser {
   /// @name Основные методы класса
   /// @{
   /**
-   * @brief Виртуальный деструктор
+   * @brief Виртуальный деструктор по умолчанию
    */
   virtual ~IPrefetchParser() noexcept = default;
   /// @}

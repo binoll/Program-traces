@@ -72,7 +72,7 @@ PrefetchDataBuilder& PrefetchDataBuilder::setFormatVersion(
 }
 
 PrefetchDataBuilder& PrefetchDataBuilder::setLastRunTime(
-    uint64_t last_run_time) noexcept {
+    time_t last_run_time) noexcept {
   storage_.last_run_time = last_run_time;
   return *this;
 }

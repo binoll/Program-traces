@@ -1,6 +1,6 @@
 /**
  * @file file_metric.hpp
- * @brief Класс для работы с файловыми метриками NTFS
+ * @brief Объявление класса FileMetric для представления метаданных NTFS-файла
  */
 
 #pragma once
@@ -24,19 +24,19 @@ namespace PrefetchAnalysis {
 
 /**
  * @class FileMetric
- * @brief Класс-контейнер для метаданных файла NTFS
- * @note Инкапсулирует метаданные файла NTFS, включая путь, MFT-ссылку и
- * дополнительные атрибуты. Обеспечивает безопасный доступ к данным через
- * методы-геттеры
+ * @brief Класс-контейнер для метаданных файла NTFS Prefetch
+ * @note Инкапсулирует путь к файлу, ссылку на запись MFT, размер файла,
+ * флаги доступа и время последнего доступа. Используется при анализе
+ * Prefetch-файлов
  */
 class FileMetric final {
  public:
-  /// @name Флаги доступа к файлу
+  /// @name Флаги доступа
   /// @{
   static constexpr uint32_t FILE_METRIC_ACCESS_READ =
       0x01;  ///< Файл был прочитан
   static constexpr uint32_t FILE_METRIC_ACCESS_WRITE =
-      0x02;  ///< В файл производилась запись
+      0x02;  ///< В файл была произведена запись
   static constexpr uint32_t FILE_METRIC_ACCESS_EXECUTE =
       0x04;  ///< Файл был исполнен
   /// @}
@@ -44,16 +44,15 @@ class FileMetric final {
   /// @name Основные методы класса
   /// @{
   /**
-   * @brief Конструктор с инициализацией всех полей
-   * @param[in] filename Полный путь к файлу в формате NTFS
-   * @param[in] mft_ref 64-битная ссылка на запись в MFT
+   * @brief Конструктор, инициализирующий все поля метрики
+   * @param[in] filename Полный путь к файлу (в формате NTFS)
+   * @param[in] mft_ref Ссылка на запись в таблице MFT
    * @param[in] file_size Размер файла в байтах (по умолчанию 0)
    * @param[in] access_flags Битовая маска флагов доступа (по умолчанию 0)
    * @param[in] last_access_time Время последнего доступа в формате FILETIME (по
    * умолчанию 0)
-   * @throw InvalidFileMetricException Если путь к файлу некорректен
-   * @note Время последнего доступа задается в 100-наносекундных интервалах с
-   * 01011601
+   * @throw InvalidFileMetricException Если путь некорректен
+   * @note Время задаётся в 100-нс интервалах от 01.01.1601 (UTC)
    */
   FileMetric(std::string filename, uint64_t mft_ref, uint64_t file_size = 0,
              uint32_t access_flags = 0, uint64_t last_access_time = 0);
@@ -67,83 +66,72 @@ class FileMetric final {
   /// @name Методы валидации
   /// @{
   /**
-   * @brief Проверяет целостность файловой метрики
-   * @return true если выполнены условия:
-   * - Путь файла не пуст и не содержит запрещенных символов
-   * - MFT-ссылка > 0
-   * - Флаги доступа содержат только допустимые комбинации
-   * - Время доступа >= 01.01.1601 (если указано)
-   * @note Метод не проверяет физическое наличие файла на диске,
-   * только корректность представления метаданных
+   * @brief Проверяет корректность всех метаданных
+   * @return true, если путь валиден, MFT > 0 и флаги допустимы
    */
   [[nodiscard]] bool isValid() const noexcept;
   /// @}
 
-  /// @name Базовые методы доступа
+  /// @name Геттеры
   /// @{
   /**
    * @brief Получить путь к файлу
-   * @return Константная ссылка на строку с полным путем к файлу
-   * @note Путь возвращается в том виде, в котором был передан в конструктор
+   * @return Ссылка на строку с абсолютным путем
    */
   [[nodiscard]] const std::string& getFilename() const noexcept;
 
   /**
    * @brief Получить ссылку на MFT-запись
-   * @return 64-битный идентификатор MFT-записи файла
+   * @return 64-битная ссылка (MFT reference)
    */
   [[nodiscard]] uint64_t getFileReference() const noexcept;
 
   /**
    * @brief Получить размер файла
    * @return Размер файла в байтах
-   * @note Возвращает 0, если размер неизвестен
    */
   [[nodiscard]] uint64_t getFileSize() const noexcept;
 
   /**
    * @brief Получить флаги доступа
-   * @return Битовая маска флагов доступа
-   * @see FILE_METRIC_ACCESS_READ, FILE_METRIC_ACCESS_WRITE,
-   * FILE_METRIC_ACCESS_EXECUTE
+   * @return Битовая маска: READ, WRITE, EXECUTE
    */
   [[nodiscard]] uint32_t getAccessFlags() const noexcept;
 
   /**
    * @brief Получить время последнего доступа
-   * @return Время последнего доступа в формате FILETIME
-   * @note Формат времени: 100-наносекундные интервалы с 01011601
+   * @return FILETIME в 100-нс интервалах от 1601 года
    */
   [[nodiscard]] uint64_t getLastAccessTime() const noexcept;
   /// @}
 
-  /// @name Методы проверки флагов доступа
+  /// @name Методы анализа флагов
   /// @{
   /**
-   * @brief Проверить факт чтения файла
-   * @return true если установлен флаг FILE_METRIC_ACCESS_READ, иначе false
+   * @brief Проверяет, был ли файл прочитан
+   * @return true, если установлен флаг READ
    */
   [[nodiscard]] bool wasAccessedForRead() const noexcept;
 
   /**
-   * @brief Проверить факт записи в файл
-   * @return true если установлен флаг FILE_METRIC_ACCESS_WRITE, иначе false
+   * @brief Проверяет, была ли запись в файл
+   * @return true, если установлен флаг WRITE
    */
   [[nodiscard]] bool wasAccessedForWrite() const noexcept;
 
   /**
-   * @brief Проверить факт выполнения файла
-   * @return true если установлен флаг FILE_METRIC_ACCESS_EXECUTE, иначе false
+   * @brief Проверяет, был ли файл исполнен
+   * @return true, если установлен флаг EXECUTE
    */
   [[nodiscard]] bool wasExecuted() const noexcept;
   /// @}
 
  private:
-  std::string filename_;       ///< Полный NTFS-путь к файлу
-  uint64_t file_reference_;    ///< Ссылка на MFT-запись
+  std::string filename_;       ///< Путь к файлу (абсолютный, NTFS)
+  uint64_t file_reference_;    ///< Ссылка на запись в MFT
   uint64_t file_size_;         ///< Размер файла в байтах
-  uint32_t access_flags_;      ///< Флаги доступа (битовая маска)
-  uint64_t last_access_time_;  ///< Время последнего доступа (FILETIME)
+  uint32_t access_flags_;      ///< Битовая маска: READ, WRITE, EXECUTE
+  uint64_t last_access_time_;  ///< FILETIME (100-нс интервалы с 01.01.1601)
 };
 
 }

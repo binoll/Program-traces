@@ -50,8 +50,6 @@ class PrefetchData : public IPrefetchData {
   [[nodiscard]] uint32_t getRunCount() const noexcept override;
   /// @}
 
-  [[nodiscard]] uint8_t getFormatVersion() const noexcept override;
-
   /// @name Методы работы с временными данными
   /// @{
   /// @copydoc IPrefetchData::getRunTimes
@@ -80,6 +78,12 @@ class PrefetchData : public IPrefetchData {
 
   /// @copydoc IPrefetchData::getDllMetrics
   [[nodiscard]] std::vector<FileMetric> getDllMetrics() const override;
+  /// @}
+
+  /// @name Прочие методы
+  /// @{
+  /// @copydoc IPrefetchData::getFormatVersion
+  [[nodiscard]] uint8_t getFormatVersion() const noexcept override;
   /// @}
 
  private:

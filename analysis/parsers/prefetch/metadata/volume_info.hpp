@@ -30,13 +30,16 @@ namespace PrefetchAnalysis {
 class VolumeInfo final {
  public:
   /// @name Константы типов томов
+  /// @brief Константы, определяющие тип логического тома по битовой маске.
+  /// @note Используются в качестве флагов в поле volume_type_.
   /// @{
   static constexpr uint32_t VOLUME_TYPE_FIXED =
       0x01;  ///< Локальный несъемный диск
   static constexpr uint32_t VOLUME_TYPE_REMOVABLE =
-      0x02;                                              ///< Съемное устройство
+      0x02;  ///< Съемное устройство (например, USB)
   static constexpr uint32_t VOLUME_TYPE_NETWORK = 0x04;  ///< Сетевой диск
-  static constexpr uint32_t VOLUME_TYPE_OPTICAL = 0x08;  ///< Оптический привод
+  static constexpr uint32_t VOLUME_TYPE_OPTICAL =
+      0x08;  ///< Оптический привод (CD/DVD)
   static constexpr uint32_t VOLUME_TYPE_RAMDISK = 0x10;  ///< RAM-диск
   /// @}
 
