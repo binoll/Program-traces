@@ -1,9 +1,5 @@
-/**
- * @file key_handle.hpp
- * @brief Реализация RAII-обертки для работы с ключами реестра.
-*/
+#include "key.hpp"
 
-#include "key_handle.hpp"
 #include <libregf.h>
 
 namespace RegistryAnalysis {

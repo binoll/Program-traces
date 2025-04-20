@@ -1,22 +1,19 @@
-/**
- * @file registry_parser.cpp
- * @brief Полная реализация методов парсера реестра Windows.
- * @details Содержит внутреннюю реализацию работы с libregf.
-*/
+#include "parser.hpp"
 
-#include "registry_parser.hpp"
 #include <libregf.h>
+
 #include <iomanip>
 #include <sstream>
 #include <vector>
+
 #include "../../../../utils/logger/logger.hpp"
 #include "../../../exceptions/general/parsing_exception.hpp"
-#include "../handle/value_handle.hpp"
+#include "../handle/value.hpp"
 #include "../model/registry_value.hpp"
 
 namespace RegistryAnalysis {
 
-RegistryParser::RegistryParser() {
+RegistryParser::RegistryParser() : file_(nullptr) {
   if (libregf_file_initialize(&file_, nullptr) != 1) {
     throw InitLibError("libregf");
   }
@@ -29,6 +26,9 @@ RegistryParser::~RegistryParser() {
 }
 
 void RegistryParser::open(const std::string& file_path) {
+  if (file_) {
+    libregf_file_free(&file_, nullptr);
+  }
   if (libregf_file_open(file_, file_path.c_str(), LIBREGF_OPEN_READ, nullptr) !=
       1) {
     throw FileOpenException(file_path);

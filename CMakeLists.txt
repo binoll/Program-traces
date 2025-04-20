@@ -11,9 +11,9 @@ add_executable(
         analysis/parsers/prefetch/metadata/file_metric.cpp
         analysis/parsers/prefetch/metadata/volume_info.cpp
         analysis/parsers/prefetch/parser/parser.cpp
-        analysis/parsers/registry/parser/registry_parser.cpp
-        analysis/parsers/registry/handle/key_handle.cpp
-        analysis/parsers/registry/handle/value_handle.cpp
+        analysis/parsers/registry/parser/parser.cpp
+        analysis/parsers/registry/handle/key.cpp
+        analysis/parsers/registry/handle/value.cpp
         utils/logger/logger.cpp
 )
 
