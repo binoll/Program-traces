@@ -1,76 +1,50 @@
-#include <ctime>
-#include <iomanip>
 #include <iostream>
 
-#include "analysis/parsers/prefetch/parser/parser.hpp"
-
-// Helper function to convert Windows FILETIME to time_t
-time_t filetime_to_timet(uint64_t filetime) {
-  if (filetime == 0) {
-    return 0;
-  }
-  // Convert 100-ns intervals to seconds since 1601-01-01
-  filetime /= 10000000ULL;
-  // Subtract difference between 1601 and 1970 (11644473600 seconds)
-  return static_cast<time_t>(filetime - 11644473600ULL);
-}
-
-void printPrefetchInfo(const PrefetchAnalysis::IPrefetchData& info) {
-  time_t last_time = info.getLastRunTime();
-
-  std::cout << "Executable: " << info.getExecutableName() << "\n"
-            << "Prefetch Hash: 0x" << std::hex << info.getPrefetchHash() << "\n"
-            << "Run Count: " << std::dec << info.getRunCount() << "\n\n"
-            << "Last Run Times: "
-            << std::put_time(std::localtime(&last_time), "%Y-%m-%d %H:%M:%S\n")
-            << "Run Times:";
-
-  for (const auto& time : info.getRunTimes()) {
-    std::cout << " "
-              << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S")
-              << "\n";
-  }
-
-  std::cout << "\nVolumes:\n";
-  for (const auto& vol : info.getVolumes()) {
-    time_t creation_time = filetime_to_timet(vol.getCreationTime());
-    std::cout << "  Device: " << vol.getDevicePath() << "\n"
-              << "  Serial: 0x" << std::hex << vol.getSerialNumber() << "\n"
-              << "  Created: "
-              << std::put_time(std::localtime(&creation_time),
-                               "%Y-%m-%d %H:%M:%S")
-              << "\n\n";
-  }
-
-  std::cout << "Tracked Files:\n";
-  for (const auto& metric : info.getMetrics()) {
-    std::cout << "  " << metric.getFilename() << " [Ref: 0x" << std::hex
-              << metric.getFileReference() << "]\n";
-  }
-}
+#include "analysis/parsers/registry/parser/parser.hpp"
+#include "utils/logger/logger.hpp"
 
 int main(int argc, char* argv[]) {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " <prefetch_file>\n";
+  try {
+
+    RegistryAnalysis::RegistryParser analyzer;
+    std::string software_path(argv[1]);
+    software_path += "/Windows/System32/config/SOFTWARE";
+    analyzer.open(software_path);
+
+    const std::string version_key = "Microsoft/Windows NT/CurrentVersion";
+    auto values = analyzer.getAllKeyValues(version_key);
+
+    // Сбор данных
+    std::string product_name_, display_version, current_build;
+    int major_version = 0, minor_version = 0;
+
+    for (const auto& val : values) {
+      if (val.name_ == "ProductName")
+        product_name_ = val.data_;
+      else if (val.name_ == "DisplayVersion")
+        display_version = val.data_;
+      else if (val.name_ == "CurrentBuild")
+        current_build = val.data_;
+      else if (val.name_ == "CurrentMajorVersionNumber")
+        major_version = std::stoi(val.data_);
+      else if (val.name_ == "CurrentMinorVersionNumber")
+        minor_version = std::stoi(val.data_);
+    }
+
+    // Определение версии
+    bool is_windows11 = (major_version >= 10 && minor_version >= 0 &&
+                         std::stoi(current_build) >= 22000);
+
+    std::cout << "Информация о системе:\n"
+              << "  ProductName: " << product_name_ << "\n"
+              << "  DisplayVersion: " << display_version << "\n"
+              << "  CurrentBuild: " << current_build << "\n"
+              << "  Версия ОС: " << (is_windows11 ? "Windows 11" : "Windows 10")
+              << "\n";
+
+  } catch (const std::exception& e) {
+    std::cerr << "Ошибка: " << e.what() << "\n";
     return 1;
   }
-
-  try {
-    // Создание объекта парсера Prefetch
-    PrefetchAnalysis::PrefetchParser parser;
-
-    // Парсинг данных из файла и получение уникального указателя на
-    // IPrefetchData
-    std::unique_ptr<PrefetchAnalysis::IPrefetchData> info =
-        parser.parse(argv[1]);
-
-    // Вывод информации о Prefetch
-    printPrefetchInfo(*info);
-  } catch (const std::exception& e) {
-    // Обработка ошибок
-    std::cerr << "Error: " << e.what() << "\n";
-    return 2;
-  }
-
   return 0;
 }

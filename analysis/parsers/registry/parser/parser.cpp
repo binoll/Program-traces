@@ -26,9 +26,6 @@ RegistryParser::~RegistryParser() {
 }
 
 void RegistryParser::open(const std::string& file_path) {
-  if (file_) {
-    libregf_file_free(&file_, nullptr);
-  }
   if (libregf_file_open(file_, file_path.c_str(), LIBREGF_OPEN_READ, nullptr) !=
       1) {
     throw FileOpenException(file_path);
