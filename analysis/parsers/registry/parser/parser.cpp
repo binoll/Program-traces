@@ -22,12 +22,24 @@ RegistryParser::RegistryParser() : file_(nullptr) {
 RegistryParser::~RegistryParser() {
   if (file_) {
     libregf_file_free(&file_, nullptr);
+    file_ = nullptr;
   }
 }
 
 void RegistryParser::open(const std::string& file_path) {
+  if (file_) {
+    libregf_file_free(&file_, nullptr);
+    file_ = nullptr;
+  }
+
+  if (libregf_file_initialize(&file_, nullptr) != 1) {
+    throw InitLibError("libregf");
+  }
+
   if (libregf_file_open(file_, file_path.c_str(), LIBREGF_OPEN_READ, nullptr) !=
       1) {
+    libregf_file_free(&file_, nullptr);
+    file_ = nullptr;
     throw FileOpenException(file_path);
   }
 }
