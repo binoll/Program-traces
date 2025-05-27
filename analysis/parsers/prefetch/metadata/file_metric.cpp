@@ -1,34 +1,19 @@
 #include "file_metric.hpp"
 
+#include <utility>
+
 namespace PrefetchAnalysis {
 
-bool is_valid(const std::string& path) noexcept {
-  return !path.empty() && path.find_first_not_of(' ') != std::string::npos;
-}
-
-FileMetric::FileMetric(std::string filename, uint64_t mft_ref,
-                       uint64_t file_size, uint32_t access_flags,
-                       uint64_t last_access_time)
+FileMetric::FileMetric(fs::path filename, const uint64_t mft_ref,
+                       const uint64_t file_size, const uint32_t access_flags,
+                       const uint64_t last_access_time)
     : filename_(std::move(filename)),
       file_reference_(mft_ref),
       file_size_(file_size),
       access_flags_(access_flags),
-      last_access_time_(last_access_time) {
-  if (!is_valid(filename_)) {
-    throw InvalidFileMetricException("Указан неверный путь к файлу");
-  }
-}
+      last_access_time_(last_access_time) {}
 
-bool FileMetric::isValid() const noexcept {
-  if (!is_valid(filename_)) {
-    return false;
-  }
-  return true;
-}
-
-const std::string& FileMetric::getFilename() const noexcept {
-  return filename_;
-}
+const fs::path& FileMetric::getFilename() const noexcept { return filename_; }
 
 uint64_t FileMetric::getFileReference() const noexcept {
   return file_reference_;
@@ -42,16 +27,41 @@ uint64_t FileMetric::getLastAccessTime() const noexcept {
   return last_access_time_;
 }
 
-bool FileMetric::wasAccessedForRead() const noexcept {
-  return (access_flags_ & FILE_METRIC_ACCESS_READ) != 0;
+template <FileMetricAccess flag>
+[[nodiscard]] bool FileMetric::checkAccessFlags() const noexcept {
+  return (access_flags_ & static_cast<uint32_t>(flag)) != 0;
 }
 
-bool FileMetric::wasAccessedForWrite() const noexcept {
-  return (access_flags_ & FILE_METRIC_ACCESS_WRITE) != 0;
+[[nodiscard]] bool FileMetric::checkAccessFlag(uint32_t types) const noexcept {
+  return (access_flags_ & types) != 0;
 }
 
-bool FileMetric::wasExecuted() const noexcept {
-  return (access_flags_ & FILE_METRIC_ACCESS_EXECUTE) != 0;
+void FileMetric::validate() const noexcept {
+  constexpr uint64_t min_valid_time =
+      116444736000000000ULL;  // 01.01.1601 (UTC)
+
+  if (!validatePath(filename_)) {
+    throw InvalidFileMetricException(filename_.string());
+  }
+
+  if (file_reference_ == 0) {
+    throw InvalidFileMetricException(filename_.string(), file_reference_);
+  }
+
+  if (last_access_time_ < min_valid_time) {
+    throw InvalidFileMetricException(filename_.string(),
+                                     std::to_string(last_access_time_));
+  }
+}
+
+bool FileMetric::validatePath(const fs::path& path) {
+  constexpr std::string_view invalid_chars = "<>:\"|?*";
+
+  if (path.empty()) {
+    return false;
+  }
+
+  return path.string().find_first_of(invalid_chars) == std::string::npos;
 }
 
 }
