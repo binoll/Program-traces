@@ -1,8 +1,5 @@
-/**
- * @file parser.hpp
- * @brief Заголовочный файл класса PrefetchParser для анализа Prefetch-файлов
- * Windows.
- */
+/// @file parser.hpp
+/// @brief Парсер Prefetch-файлов Windows
 
 #pragma once
 
@@ -13,110 +10,92 @@
 #include <string>
 
 #include "../../../exceptions/general/parsing_exception.hpp"
-#include "../model/data.hpp"
 #include "iparser.hpp"
 
 namespace PrefetchAnalysis {
 
-/// @name Константы для конвертации FILETIME
+/// @name Константы времени
 /// @{
+
 constexpr uint64_t FILETIME_EPOCH_DIFF =
     116444736000000000ULL;  ///< Разница между FILETIME и UNIX-эпохой
+                            ///< (1601-1970)
 constexpr uint64_t FILETIME_MAX_VALID =
-    2650467744000000000ULL;  ///< Максимально допустимое значение FILETIME (1
-///< янв 2050)
+    2650467744000000000ULL;  ///< Максимальное допустимое значение (01.01.2500)
+
 /// @}
 
-/**
- * @class PrefetchParser
- * @brief Основной класс для парсинга Prefetch-файлов с использованием
- * библиотеки libscca
- *
- * @note Реализует интерфейс IPrefetchParser, предоставляя методы для
- * извлечения метаданных, временных меток запуска, информации о томах и метрик
- * файлов из Prefetch-файлов формата Windows
- */
+/// @class PrefetchParser
+/// @brief Реализация парсера Prefetch-файлов с использованием libscca
+/// @details Обеспечивает:
+///   - Чтение и валидацию Prefetch-файлов
+///   - Преобразование данных в объектную модель
+///   - Обработку ошибок формата и данных
 class PrefetchParser : public IPrefetchParser {
  public:
   /// @name Основные методы класса
   /// @{
-  /**
-   * @brief Конструктор, инициализирующий контекст работы с библиотекой libscca
-   * @throw InitLibError При ошибке инициализации библиотеки libscca
-   */
+
+  /// @brief Конструктор
+  /// @exception InitLibError Ошибка инициализации libscca
   PrefetchParser();
 
-  /**
-   * @brief Деструктор, освобождающий ресурсы библиотеки libscca
-   * @note Гарантирует безопасное освобождение ресурсов даже в случае
-   * исключений
-   */
+  /// @brief Деструктор
   ~PrefetchParser() noexcept override;
+
   /// @}
 
-  /// @name Основной интерфейс парсера
+  /// @name Основной интерфейс
   /// @{
-  /**
-   * @brief Основной метод для парсинга Prefetch-файла
-   *
-   * @param path Абсолютный путь к анализируемому файлу
-   * @return Уникальный указатель на объект с распарсенными данными
-   *
-   * @throw FileOpenException При проблемах с открытием файла
-   * @throw InvalidFormatException При нарушении структуры файла
-   * @throw DataReadException При ошибках чтения данных
-   *
-   * @note Реализует цепочку обработки: открытие файла -> парсинг данных ->
-   * закрытие файла
-   */
+
+  /// @brief Парсинг Prefetch-файла
+  /// @param[in] path Путь к файлу
+  /// @return Указатель на объект с данными
+  /// @exception FileOpenException Ошибка открытия файла
+  /// @exception InvalidFormatException Некорректный формат файла
+  /// @exception DataReadException Ошибка чтения данных
   [[nodiscard]] std::unique_ptr<IPrefetchData> parse(
       const std::string& path) const override;
+
   /// @}
 
  private:
-  /// @name Вспомогательные методы парсинга
+  /// @name Методы парсинга
   /// @{
-  /**
-   * @brief Извлекает базовую информацию о Prefetch-файле
-   * @param builder Сборщик данных для заполнения
-   * @throw DataReadException При ошибках чтения полей файла
-   */
+
+  /// @brief Парсинг основной информации
+  /// @param[in] builder Сборщик данных
+  /// @exception DataReadException Ошибка чтения обязательных полей
   void parseBasicInfo(PrefetchDataBuilder& builder) const;
 
-  /**
-   * @brief Извлекает временные метки запусков приложения
-   * @param builder Сборщик данных для заполнения
-   * @note Пропускает некорректные временные метки с записью в лог
-   */
+  /// @brief Парсинг временных меток запусков
+  /// @param[in] builder Сборщик данных
   void parseRunTimes(PrefetchDataBuilder& builder) const;
 
-  /**
-   * @brief Извлекает информацию о связанных томах
-   * @param builder Сборщик данных для заполнения
-   * @throw DataReadException При ошибках чтения информации о томах
-   */
+  /// @brief Парсинг информации о томах
+  /// @param[in] builder Сборщик данных
+  /// @exception DataReadException Ошибка чтения информации о томах
   void parseVolumes(PrefetchDataBuilder& builder) const;
 
-  /**
-   * @brief Извлекает метрики файлов из Prefetch-файла
-   * @param builder Сборщик данных для заполнения
-   * @throw DataReadException При ошибках чтения метрик
-   */
+  /// @brief Парсинг файловых метрик
+  /// @param[in] builder Сборщик данных
+  /// @exception DataReadException Ошибка чтения метрик
   void parseMetrics(PrefetchDataBuilder& builder) const;
+
   /// @}
 
-  /// @name Утилиты преобразования данных
+  /// @name Вспомогательные методы
   /// @{
-  /**
-   * @brief Конвертирует Windows FILETIME в UNIX-время
-   * @param filetime 64-битное значение FILETIME
-   * @return Время в формате time_t
-   * @throw InvalidTimestampException При некорректном значении FILETIME
-   */
+
+  /// @brief Конвертация FILETIME в UNIX-время
+  /// @param[in] filetime Время в формате FILETIME
+  /// @return Время в формате UNIX
+  /// @exception InvalidTimestampException Некорректное значение времени
   static time_t convertFiletime(uint64_t filetime);
+
   /// @}
 
-  libscca_file_t* scca_handle_;  ///< Указатель на контекст libscca
+  libscca_file_t* scca_handle_;  ///< Хэндл libscca
 };
 
 }

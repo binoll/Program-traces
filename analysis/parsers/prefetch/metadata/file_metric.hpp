@@ -10,8 +10,6 @@
 
 namespace PrefetchAnalysis {
 
-namespace fs = std::filesystem;
-
 /// @class FileMetric
 /// @brief Контейнер метаданных файла NTFS
 /// @details Инкапсулирует:
@@ -32,7 +30,7 @@ class FileMetric final {
   /// @param[in] access_flags Битовая маска флагов доступа (0 по умолчанию)
   /// @param[in] last_access_time Время последнего доступа в формате FILETIME
   /// @note Время задаётся в 100-нс интервалах от 01.01.1601 (UTC)
-  FileMetric(fs::path filename, uint64_t mft_ref, uint64_t file_size = 0,
+  FileMetric(std::string filename, uint64_t mft_ref, uint64_t file_size = 0,
              uint32_t access_flags = 0, uint64_t last_access_time = 0);
 
   /// @brief Деструктор по умолчанию
@@ -44,7 +42,7 @@ class FileMetric final {
 
   /// @brief Возвращает абсолютный путь к файлу
   /// @return Константная ссылка на объект пути
-  [[nodiscard]] const fs::path& getFilename() const noexcept;
+  [[nodiscard]] const std::string& getFilename() const noexcept;
 
   /// @brief Возвращает идентификатор MFT-записи
   /// @return 64-битный беззнаковый идентификатор
@@ -80,7 +78,7 @@ class FileMetric final {
   /// @}
 
  private:
-  const fs::path filename_;          ///< Абсолютный путь к файлу
+  const std::string filename_;       ///< Абсолютный путь к файлу
   const uint64_t file_reference_;    ///< Идентификатор MFT-записи
   const uint64_t file_size_;         ///< Размер файла в байтах
   const uint32_t access_flags_;      ///< Битовая маска флагов доступа

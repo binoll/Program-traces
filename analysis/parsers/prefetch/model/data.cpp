@@ -3,16 +3,12 @@
 #include <algorithm>
 #include <filesystem>
 
-namespace fs = std::filesystem;
-
 namespace PrefetchAnalysis {
 
+namespace fs = std::filesystem;
+
 PrefetchData::PrefetchData(PrefetchDataStorage&& storage)
-    : storage_(std::move(storage)) {
-  if (storage_.executable_name.empty()) {
-    throw PrefetchDataException("Недопустимое имя исполняемого файла");
-  }
-}
+    : storage_(std::move(storage)) {}
 
 std::string PrefetchData::getExecutableName() const noexcept {
   return storage_.executable_name;
@@ -26,11 +22,11 @@ uint32_t PrefetchData::getRunCount() const noexcept {
   return storage_.run_count;
 }
 
-const std::vector<time_t>& PrefetchData::getRunTimes() const noexcept {
+const std::vector<uint64_t>& PrefetchData::getRunTimes() const noexcept {
   return storage_.run_times;
 }
 
-time_t PrefetchData::getLastRunTime() const noexcept {
+uint64_t PrefetchData::getLastRunTime() const noexcept {
   return storage_.last_run_time;
 }
 
@@ -59,6 +55,11 @@ std::vector<FileMetric> PrefetchData::getDllMetrics() const {
 
 uint8_t PrefetchData::getFormatVersion() const noexcept {
   return storage_.format_version;
+}
+
+[[nodiscard]] auto PrefetchData::isVersionSupported(
+    const PrefetchFormatVersion version) const noexcept -> bool {
+  return version != PrefetchFormatVersion::UNKNOWN;
 }
 
 }

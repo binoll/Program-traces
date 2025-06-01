@@ -4,7 +4,7 @@
 
 namespace PrefetchAnalysis {
 
-FileMetric::FileMetric(fs::path filename, const uint64_t mft_ref,
+FileMetric::FileMetric(std::string filename, const uint64_t mft_ref,
                        const uint64_t file_size, const uint32_t access_flags,
                        const uint64_t last_access_time)
     : filename_(std::move(filename)),
@@ -13,7 +13,9 @@ FileMetric::FileMetric(fs::path filename, const uint64_t mft_ref,
       access_flags_(access_flags),
       last_access_time_(last_access_time) {}
 
-const fs::path& FileMetric::getFilename() const noexcept { return filename_; }
+const std::string& FileMetric::getFilename() const noexcept {
+  return filename_;
+}
 
 uint64_t FileMetric::getFileReference() const noexcept {
   return file_reference_;

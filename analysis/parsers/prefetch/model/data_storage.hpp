@@ -1,11 +1,9 @@
-/**
- * @file data_storage.hpp
- * @brief Структура хранения данных Prefetch-файла
- */
+/// @file data_storage.hpp
+/// @brief Структура хранения данных Prefetch-файла
 
 #pragma once
 
-#include <ctime>
+#include <cstdint>
 #include <vector>
 
 #include "../metadata/file_metric.hpp"
@@ -13,27 +11,22 @@
 
 namespace PrefetchAnalysis {
 
-/**
- * @struct PrefetchDataStorage
- * @brief Чистый контейнер для данных Prefetch-файла
- * @note Содержит все поля, необходимые для создания PrefetchData. Может
- * использоваться как строителем, так и другими фабриками
- */
+/// @struct PrefetchDataStorage
+/// @brief Plain Old Data (POD) структура для хранения сырых данных
+/// Prefetch-файла
 struct PrefetchDataStorage {
   std::string executable_name;  ///< Исполняемое имя Prefetch-файла в формате
                                 ///< "NAME.EXE-XXXXXXXX.pf"
-  uint32_t prefetch_hash = 0;   ///< 32-битный хеш от пути исполняемого файла
-  uint32_t run_count = 0;       ///< Количество запусков приложения
-  std::vector<time_t>
-      run_times;  ///< Список времён запусков в формате UNIX time (UTC)
+  uint32_t prefetch_hash = 0;   ///< 32-битный хеш пути к исполняемому файлу
+  uint32_t run_count = 0;  ///< Число запусков приложения (может быть неточным)
+  std::vector<uint64_t>
+      run_times;  ///< Временные метки запусков в формате FILETIME
   std::vector<VolumeInfo>
-      volumes;  ///< Информация о логических дисках, использованных при запуске
-  std::vector<FileMetric>
-      metrics;  ///< Список файлов и соответствующих метрик использования
+      volumes;  ///< Информация о томах, используемых приложением
+  std::vector<FileMetric> metrics;  ///< Метрики доступа к файлам приложения
   uint8_t format_version =
-      0;  ///< Версия формата Prefetch-файла (например, 17, 23, 26)
-  time_t last_run_time =
-      0;  ///< UNIX-время последнего запуска
+      0;  ///< Версия формата Prefetch: 17(XP),23(Vista),26(Win8+)
+  uint64_t last_run_time = 0;  ///< Время последнего запуска в формате FILETIME
 };
 
 }

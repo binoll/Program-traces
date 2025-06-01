@@ -1,112 +1,102 @@
-/**
- * @file idata.hpp
- * @brief Интерфейс для доступа к данным Windows Prefetch-файлов
- */
+/// @file idata.hpp
+/// @brief Интерфейс для доступа к данным Windows Prefetch-файлов
 
 #pragma once
 
-#include <ctime>
 #include <string>
 #include <vector>
 
 #include "../metadata/file_metric.hpp"
 #include "../metadata/volume_info.hpp"
+#include "prefetch_versions.hpp"
 
 namespace PrefetchAnalysis {
 
-/**
- * @class IPrefetchData
- * @brief Интерфейс для чтения и доступа к метаданным Prefetch-файлов
- * @note Определяет методы для получения основных параметров, временных меток,
- * томов и метрик файлов из Prefetch-файла
- */
+/// @class IPrefetchData
+/// @brief Абстрактный интерфейс для работы с метаданными Prefetch-файлов
+/// @details Определяет контракт для доступа к основным параметрам, временным
+/// меткам, информации о томах и файловым метрикам Prefetch-файлов. Все методы
+/// должны быть реализованы в классах-наследниках для конкретных версий формата
+/// файлов
 class IPrefetchData {
  public:
   /// @name Основные методы класса
   /// @{
-  /**
-   * @brief Виртуальный деструктор о умолчаниюп
-   */
+
+  /// @brief Виртуальный деструктор по умолчанию
   virtual ~IPrefetchData() noexcept = default;
   /// @}
 
-  /// @name Основные методы доступа
+  /// @name Основные параметры файла
   /// @{
-  /**
-   * @brief Получить имя исполняемого файла
-   * @return Строка в формате "NAME.EXE-XXXXXX"
-   */
+
+  /// @brief Получить имя исполняемого файла
+  /// @return Строка в формате "NAME.EXE-XXXXXXXX.pf", где XXXXXXXX - 8-значный
+  /// хеш
   [[nodiscard]] virtual std::string getExecutableName() const noexcept = 0;
 
-  /**
-   * @brief Получить 32‑битный хеш Prefetch-файла
-   * @return Хеш, извлечённый из заголовка файла
-   */
+  /// @brief Получить 32-битный хеш Prefetch-файла
+  /// @return Хеш-сумма, рассчитанная Windows при создании файла
   [[nodiscard]] virtual uint32_t getPrefetchHash() const noexcept = 0;
 
-  /**
-   * @brief Получить количество запусков приложения
-   * @return Число зарегистрированных запусков (≥ 0)
-   */
+  /// @brief Получить количество зарегистрированных запусков
+  /// @return Число запусков ≥ 0 (может отличаться от реального числа запусков)
   [[nodiscard]] virtual uint32_t getRunCount() const noexcept = 0;
   /// @}
 
-  /// @name Методы работы с временными метками
+  /// @name Временные характеристики
   /// @{
-  /**
-   * @brief Получить список временных меток запусков
-   * @return Константная ссылка на вектор временных меток (UNIX time)
-   */
-  [[nodiscard]] virtual const std::vector<time_t>& getRunTimes()
+
+  /// @brief Получить список временных меток запусков
+  /// @return Константная ссылка на вектор UNIX-времени (64 бита) в UTC
+  [[nodiscard]] virtual const std::vector<uint64_t>& getRunTimes()
       const noexcept = 0;
 
-  /**
-   * @brief Получить время последнего запуска
-   * @return Временная метка последнего запуска (UNIX time)
-   */
-  [[nodiscard]] virtual time_t getLastRunTime() const noexcept = 0;
+  /// @brief Получить время последнего запуска
+  /// @return UNIX-время последнего запуска (0 если данных нет)
+  [[nodiscard]] virtual uint64_t getLastRunTime() const noexcept = 0;
   /// @}
 
-  /// @name Методы работы с томами
+  /// @name Информация о томах
   /// @{
-  /**
-   * @brief Получить информацию обо всех томах
-   * @return Константная ссылка на вектор объектов VolumeInfo
-   */
+
+  /// @brief Получить информацию о логических томах
+  /// @return Константная ссылка на вектор VolumeInfo
   [[nodiscard]] virtual const std::vector<VolumeInfo>& getVolumes()
       const noexcept = 0;
 
-  /**
-   * @brief Получить основной том, содержащий исполняемый файл
-   * @return Объект VolumeInfo основного тома
-   * @throw PrefetchDataException Если основной том не найден
-   */
+  /// @brief Получить основной том приложения
+  /// @return Объект VolumeInfo с данными основного тома
+  /// @throw PrefetchDataException Если том не обнаружен
   [[nodiscard]] virtual VolumeInfo getMainVolume() const = 0;
   /// @}
 
-  /// @name Методы работы с файловыми метриками
+  /// @name Файловые метрики
   /// @{
-  /**
-   * @brief Получить метрики всех файлов, упомянутых в Prefetch-файле
-   * @return Константная ссылка на вектор объектов FileMetric
-   */
+
+  /// @brief Получить все файловые метрики
+  /// @return Константная ссылка на вектор FileMetric
   [[nodiscard]] virtual const std::vector<FileMetric>& getMetrics()
       const noexcept = 0;
 
-  /**
-   * @brief Получить метрики только для DLL-файлов
-   * @return Вектор объектов FileMetric для DLL-файлов
-   */
+  /// @brief Получить метрики только для DLL
+  /// @return Вектор FileMetric для DLL-файлов
+  /// @note Фильтрует метрики по расширению .dll
   [[nodiscard]] virtual std::vector<FileMetric> getDllMetrics() const = 0;
   /// @}
 
-  /// @name Прочие методы
+  /// @name Служебная информация
   /// @{
-  /**
-   * @brief Получить версию формата Prefetch-файла
-   * @return Целочисленный идентификатор версии формата (≥ 10)
-   */
+
+  /// @brief Получить версию формата Prefetch-файла
+  /// @return Номер версии формата: 17 (Windows XP), 23 (Vista), 26 (Windows 8+)
   [[nodiscard]] virtual uint8_t getFormatVersion() const noexcept = 0;
+
+  /// @brief Проверяет поддержку версии
+  /// @param[in] version Версия для проверки
+  /// @return true если версия поддерживается парсером
+  [[nodiscard]] virtual bool isVersionSupported(
+      PrefetchFormatVersion version) const noexcept = 0;
   /// @}
 };
 
