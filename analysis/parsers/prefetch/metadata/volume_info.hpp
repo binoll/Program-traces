@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <string>
 
-#include "../../../exceptions/prefetch/volume_exception.hpp"
 #include "volume_type.hpp"
 
 namespace PrefetchAnalysis {
@@ -25,7 +24,7 @@ class VolumeInfo final {
   /// @{
 
   /// @brief Основной конструктор
-  /// @param[in] device_path Путь к устройству в формате "\\Device\\..."
+  /// @param[in] device_path Путь к устройству
   /// @param[in] serial_number Уникальный серийный номер тома
   /// @param[in] creation_time Время создания в формате FILETIME
   /// @param[in] volume_size Логический размер тома в байтах
@@ -43,7 +42,7 @@ class VolumeInfo final {
   /// @{
 
   /// @brief Возвращает NT-путь к устройству
-  /// @return Константная ссылка на строку с NT-путём в формате "\\Device\\..."
+  /// @return Константная ссылка на строку с NT-путём
   [[nodiscard]] const std::string& getDevicePath() const noexcept;
 
   /// @brief Возвращает серийный номер тома
@@ -79,37 +78,7 @@ class VolumeInfo final {
   [[nodiscard]] bool checkVolumeTypes(uint32_t types) const noexcept;
   /// @}
 
-  /// @name Валидация
-  /// @{
-
-  /// @brief Выполняет комплексную проверку валидности всех данных тома
-  /// @throw InvalidVolumeException Генерируется при обнаружении любых
-  /// некорректных данных
-  /// @details Проверяет следующие аспекты:
-  /// - Соответствие пути формату NT-устройства
-  /// - Корректность временной метки создания (не раньше 1601 года)
-  /// - Допустимость комбинации флагов типа тома
-  /// - Наличие ненулевого серийного номера
-  /// @note Время проверяется в формате FILETIME (100-нс интервалы с 01.01.1601)
-  void validate() const;
-
  private:
-  /// @brief Проверяет корректность NT-пути к устройству
-  /// @return true если путь:
-  /// - Начинается с \\Device\\
-  /// - Содержит одно из ключевых слов устройств
-  /// - Не содержит запрещённых символов
-  /// @note Поддерживаемые ключевые слова: HarddiskVolume, CdRom и др.
-  [[nodiscard]] bool validatePath() const;
-
-  /// @brief Проверяет валидность битовой маски типа тома
-  /// @return true если:
-  /// - Не установлены неизвестные флаги
-  /// - Сочетание флагов допустимо
-  /// @note Использует предопределённую маску VALID_VOLUME_TYPES_MASK
-  [[nodiscard]] bool validateVolumeType() const noexcept;
-  /// @}
-
   std::string device_path_;  ///< NT-путь к устройству
   uint32_t serial_number_;   ///< Уникальный идентификатор тома
   uint64_t creation_time_;   ///< Время создания (FILETIME)

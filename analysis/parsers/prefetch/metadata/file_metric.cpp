@@ -32,36 +32,9 @@ template <FileMetricAccess flag>
   return (access_flags_ & static_cast<uint32_t>(flag)) != 0;
 }
 
-[[nodiscard]] bool FileMetric::checkAccessFlag(uint32_t types) const noexcept {
+[[nodiscard]] bool FileMetric::checkAccessFlag(
+    const uint32_t types) const noexcept {
   return (access_flags_ & types) != 0;
-}
-
-void FileMetric::validate() const noexcept {
-  constexpr uint64_t min_valid_time =
-      116444736000000000ULL;  // 01.01.1601 (UTC)
-
-  if (!validatePath(filename_)) {
-    throw InvalidFileMetricException(filename_.string());
-  }
-
-  if (file_reference_ == 0) {
-    throw InvalidFileMetricException(filename_.string(), file_reference_);
-  }
-
-  if (last_access_time_ < min_valid_time) {
-    throw InvalidFileMetricException(filename_.string(),
-                                     std::to_string(last_access_time_));
-  }
-}
-
-bool FileMetric::validatePath(const fs::path& path) {
-  constexpr std::string_view invalid_chars = "<>:\"|?*";
-
-  if (path.empty()) {
-    return false;
-  }
-
-  return path.string().find_first_of(invalid_chars) == std::string::npos;
 }
 
 }

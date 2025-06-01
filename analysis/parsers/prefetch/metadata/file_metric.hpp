@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <filesystem>
 
-#include "../../../exceptions/prefetch/file_metric_exception.hpp"
 #include "file_metric_access.hpp"
 
 namespace PrefetchAnalysis {
@@ -80,24 +79,7 @@ class FileMetric final {
   [[nodiscard]] bool checkAccessFlag(uint32_t types) const noexcept;
   /// @}
 
-  /// @name Валидация
-  /// @{
-
-  /// @brief Выполняет полную проверку валидности объекта
-  /// @throw InvalidFileMetricException При обнаружении некорректных данных.
-  /// Проверяет:
-  ///    - Корректность NTFS-пути
-  ///    - Ненулевую ссылку на MFT
-  ///    - Валидность временной метки
-  void validate() const noexcept;
-
  private:
-  /// @brief Проверяет валидность NTFS-пути
-  /// @param[in] path Путь для проверки
-  /// @return true если путь соответствует формату NTFS
-  static bool validatePath(const fs::path& path);
-  /// @}
-
   const fs::path filename_;          ///< Абсолютный путь к файлу
   const uint64_t file_reference_;    ///< Идентификатор MFT-записи
   const uint64_t file_size_;         ///< Размер файла в байтах
