@@ -6,9 +6,9 @@
 #include <cstring>
 #include <vector>
 
-#include "../../../utils/logging/logger.hpp"
 #include "../../../core/exceptions/parsing_exception.hpp"
 #include "../../../core/exceptions/registry_exception.hpp"
+#include "../../../utils/logging/logger.hpp"
 #include "../data_model/data.hpp"
 #include "../data_model/data_builder.hpp"
 #include "../data_types/key.hpp"
