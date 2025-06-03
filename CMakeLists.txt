@@ -6,15 +6,19 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(
         program_traces
         main.cpp
-        analysis/parsers/prefetch/model/data.cpp
-        analysis/parsers/prefetch/model/data_builder.cpp
-        analysis/parsers/prefetch/metadata/file_metric.cpp
-        analysis/parsers/prefetch/metadata/volume_info.cpp
-        analysis/parsers/prefetch/parser/parser.cpp
-        analysis/parsers/registry/parser/parser.cpp
-        analysis/parsers/registry/handle/key.cpp
-        analysis/parsers/registry/handle/value.cpp
-        utils/logger/logger.cpp
+        analysis/prefetch/model/data.cpp
+        analysis/prefetch/model/data_builder.cpp
+        analysis/prefetch/metadata/file_metric.cpp
+        analysis/prefetch/metadata/volume_info.cpp
+        analysis/prefetch/parser/parser.cpp
+        analysis/registry/data_types/key.cpp
+        analysis/registry/data_types/value.cpp
+        analysis/registry/data_model/data.cpp
+        analysis/registry/data_model/data_builder.cpp
+        analysis/registry/data_model/storage/data_storage.cpp
+        analysis/registry/enums/value_type_utils.cpp
+        analysis/registry/parser/parser.cpp
+        utils/logging/logger.cpp
 )
 
 find_package(spdlog REQUIRED)
