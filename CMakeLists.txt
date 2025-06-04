@@ -18,6 +18,7 @@ add_executable(
         analysis/registry/data_model/storage/data_storage.cpp
         analysis/registry/enums/value_type_utils.cpp
         analysis/registry/parser/parser.cpp
+        core/os_detection/os_detection.cpp
         utils/logging/logger.cpp
 )
 
