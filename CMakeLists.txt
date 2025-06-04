@@ -18,6 +18,7 @@ add_executable(
         analysis/registry/data_model/storage/data_storage.cpp
         analysis/registry/enums/value_type_utils.cpp
         analysis/registry/parser/parser.cpp
+        analysis/evtx/parser/evtx_parser.cpp
         core/os_detection/os_detection.cpp
         utils/logging/logger.cpp
         utils/config/config.cpp
@@ -26,6 +27,7 @@ add_executable(
 find_package(spdlog REQUIRED)
 find_library(REGF_LIBRARY NAMES regf libregf)
 find_library(SCCA_LIBRARY NAMES scca libscca)
+find_library(EVTX_LIBRARY NAMES evtx libevtx)
 
 if (NOT REGF_LIBRARY)
     message(FATAL_ERROR "Библиотека libregf не найдена. Установите ее или укажите путь вручную.")
@@ -35,11 +37,17 @@ if (NOT SCCA_LIBRARY)
     message(FATAL_ERROR "Библиотека libscca не найдена. Установите ее или укажите путь вручную.")
 endif ()
 
+if (NOT EVTX_LIBRARY)
+    message(FATAL_ERROR "Библиотека libevtx не найдена. Установите ее или укажите путь вручную.")
+endif ()
+
 message(STATUS "Найдена библиотека libregf: ${REGF_LIBRARY}")
 message(STATUS "Найдена библиотека libscca: ${SCCA_LIBRARY}")
+message(STATUS "Найдена библиотека libscca: ${EVTX_LIBRARY}")
 
 target_link_libraries(program_traces
         spdlog::spdlog
         ${REGF_LIBRARY}
         ${SCCA_LIBRARY}
+        ${EVTX_LIBRARY}
 )
