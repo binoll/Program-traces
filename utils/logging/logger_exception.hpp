@@ -10,7 +10,7 @@
 /// @brief Исключение при инициализации логгера
 class LoggerInitException : public std::runtime_error {
  public:
-  /// @brief Конструктор исключения
+  /// @brief Конструктор
   /// @param message Сообщение об ошибке
   explicit LoggerInitException(const std::string& message)
       : std::runtime_error(message) {}

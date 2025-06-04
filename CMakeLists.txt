@@ -20,10 +20,10 @@ add_executable(
         analysis/registry/parser/parser.cpp
         core/os_detection/os_detection.cpp
         utils/logging/logger.cpp
+        utils/config/config.cpp
 )
 
 find_package(spdlog REQUIRED)
-
 find_library(REGF_LIBRARY NAMES regf libregf)
 find_library(SCCA_LIBRARY NAMES scca libscca)
 
