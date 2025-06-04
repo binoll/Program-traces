@@ -27,7 +27,7 @@ doxygen docs/Doxyfile
 ### Installing common dependencies
 
 ```bash
-sudo apt update && sudo apt install cmake libspdlog-dev git autoconf automake libtool pkg-config gcc g++ make libfuse-dev -y
+sudo apt update && sudo apt install cmake libboost-dev libspdlog-dev git autoconf automake libtool pkg-config gcc g++ make libfuse-dev -y
 ```
 
 ### Install libregf
