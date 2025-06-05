@@ -1,10 +1,10 @@
-#include "evtx_parser.hpp"
+#include "parser.hpp"
 
 #include <regex>
 #include <vector>
 
-#include "../../../core/exceptions/parsing_exception.hpp"
-#include "../../../utils/logging/logger.hpp"
+#include "../../../../core/exceptions/parsing_exception.hpp"
+#include "../../../../utils/logging/logger.hpp"
 
 namespace EventLogAnalysis {
 
@@ -20,10 +20,8 @@ EvtxParser::EvtxParser() {
     if (error) {
       char error_buffer[256];
       libevtx_error_sprint(error, error_buffer, sizeof(error_buffer));
-      error_msg += ": "s + error_buffer;
       libevtx_error_free(&error);
     }
-    logger->error(error_msg);
     throw InitLibError("libevtx");
   }
 }
@@ -47,9 +45,8 @@ void EvtxParser::OpenLogFile(const std::string& file_path) {
   }
 
   libevtx_error_t* error = nullptr;
-  int access_flags = libevtx_get_access_flags_read();
+  const int access_flags = libevtx_get_access_flags_read();
 
-  logger->info("Открытие EVTX файла: {}", file_path);
   if (libevtx_file_open(evtx_file_, file_path.c_str(), access_flags, &error) !=
       1) {
     std::string error_msg = "Не удалось открыть файл: "s + file_path;
@@ -59,7 +56,6 @@ void EvtxParser::OpenLogFile(const std::string& file_path) {
       error_msg += ": "s + error_buffer;
       libevtx_error_free(&error);
     }
-    logger->error(error_msg);
     throw FileOpenException(file_path);
   }
   file_opened_ = true;
@@ -83,7 +79,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
   // Получение идентификатора события
   uint32_t event_id = 0;
   if (libevtx_record_get_event_identifier(record, &event_id, &error) == 1) {
-    event_data->SetEventID(event_id);
+    event_data->setEventID(event_id);
   } else if (error) {
     libevtx_error_free(&error);
   }
@@ -91,7 +87,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
   // Получение времени записи
   uint64_t timestamp = 0;
   if (libevtx_record_get_written_time(record, &timestamp, &error) == 1) {
-    event_data->SetTimestamp(timestamp);
+    event_data->setTimestamp(timestamp);
   } else if (error) {
     libevtx_error_free(&error);
   }
@@ -99,7 +95,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
   // Получение уровня события
   uint8_t level = 0;
   if (libevtx_record_get_event_level(record, &level, &error) == 1) {
-    event_data->SetLevel(static_cast<EventLevel>(level));
+    event_data->setLevel(static_cast<EventLevel>(level));
   } else if (error) {
     libevtx_error_free(&error);
   }
@@ -113,7 +109,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
       if (libevtx_record_get_utf8_provider_identifier(
               record, reinterpret_cast<uint8_t*>(buffer.data()), provider_size,
               &error) == 1) {
-        event_data->SetProvider(buffer.data());
+        event_data->setProvider(buffer.data());
       } else if (error) {
         libevtx_error_free(&error);
       }
@@ -131,7 +127,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
       if (libevtx_record_get_utf8_computer_name(
               record, reinterpret_cast<uint8_t*>(buffer.data()), computer_size,
               &error) == 1) {
-        event_data->SetComputer(buffer.data());
+        event_data->setComputer(buffer.data());
       } else if (error) {
         libevtx_error_free(&error);
       }
@@ -149,7 +145,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
       if (libevtx_record_get_utf8_channel_name(
               record, reinterpret_cast<uint8_t*>(buffer.data()), channel_size,
               &error) == 1) {
-        event_data->SetChannel(buffer.data());
+        event_data->setChannel(buffer.data());
       } else if (error) {
         libevtx_error_free(&error);
       }
@@ -167,7 +163,7 @@ std::unique_ptr<EventData> EvtxParser::ParseRecord(libevtx_record_t* record) {
               record, reinterpret_cast<uint8_t*>(buffer.data()), xml_size,
               &error) == 1) {
         std::string xml_string = buffer.data();
-        event_data->SetXml(xml_string);
+        event_data->setXml(xml_string);
         ExtractEventDataFromXml(*event_data, xml_string);
       } else if (error) {
         libevtx_error_free(&error);
@@ -209,12 +205,12 @@ void EvtxParser::ExtractEventDataFromXml(EventData& event_data,
         while ((pos = value.find("&apos;")) != std::string::npos)
           value.replace(pos, 6, "'");
 
-        event_data.AddData(name, value);
+        event_data.addData(name, value);
 
         // Использование CommandLine как описания для событий выполнения
         // процессов
         if (name == "CommandLine") {
-          event_data.SetDescription(value);
+          event_data.setDescription(value);
         }
       }
     }
@@ -223,12 +219,12 @@ void EvtxParser::ExtractEventDataFromXml(EventData& event_data,
   }
 
   // Извлечение описания, если не установлено из CommandLine
-  if (event_data.Description().empty()) {
+  if (event_data.getDescription().empty()) {
     try {
       std::regex desc_regex(R"(<Description>([^<]+)</Description>)");
       std::smatch match;
       if (std::regex_search(xml, match, desc_regex) && match.size() > 1) {
-        event_data.SetDescription(match[1].str());
+        event_data.setDescription(match[1].str());
       }
     } catch (const std::regex_error& e) {
       logger->warn("Ошибка регулярного выражения при разборе Description: {}",
@@ -237,13 +233,14 @@ void EvtxParser::ExtractEventDataFromXml(EventData& event_data,
   }
 }
 
-std::vector<std::unique_ptr<IEventData>> EvtxParser::ParseEvents(
+std::vector<std::unique_ptr<IEventData>> EvtxParser::parseEvents(
     const std::string& file_path) {
   const auto logger = GlobalLogger::get();
-  logger->info("Разбор событий из EVTX файла: {}", file_path);
 
   try {
     OpenLogFile(file_path);
+
+    logger->info("Начало обработки EVTX файла: {}", file_path);
 
     libevtx_error_t* error = nullptr;
     int record_count = 0;
@@ -259,7 +256,6 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::ParseEvents(
         error_msg += ": "s + error_buffer;
         libevtx_error_free(&error);
       }
-      logger->error(error_msg);
       throw DataReadException(error_msg);
     }
 
@@ -277,7 +273,8 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::ParseEvents(
       }
     }
 
-    logger->info("Успешно разобрано {} событий", events.size());
+    logger->info("Файл успешно обработан. Успешно разобрано {} событий",
+                 events.size());
     return events;
   } catch (...) {
     CloseLogFile();
@@ -285,7 +282,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::ParseEvents(
   }
 }
 
-std::vector<std::unique_ptr<IEventData>> EvtxParser::GetEventsByType(
+std::vector<std::unique_ptr<IEventData>> EvtxParser::getEventsByType(
     const std::string& file_path, uint32_t event_id) {
   const auto logger = GlobalLogger::get();
   logger->info("Фильтрация событий по ID {} из EVTX файла: {}", event_id,
@@ -308,7 +305,6 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::GetEventsByType(
         error_msg += ": "s + error_buffer;
         libevtx_error_free(&error);
       }
-      logger->error(error_msg);
       throw DataReadException(error_msg);
     }
 

@@ -92,16 +92,16 @@ sudo ldconfig && cd ..
 sccainfo
 ```
 
-### Install libfwevt and libevtx
+### Install libevtx
 
-1. Clone the repository libfwevt
+1. Clone the repository libevtx
 
 ```bash
-git clone https://github.com/libyal/libfwevt.git
-cd libfwevt
+git clone https://github.com/libyal/libevtx.git
+cd libevtx
 ```
 
-2. Build and install the library "libfwevt"
+2. Build and install the library "libevtx"
 
 ```bash
 ./synclibs.sh
@@ -117,14 +117,22 @@ sudo make install
 sudo ldconfig && cd ..
 ```
 
-4. Clone the repository libevtx
+4. Checking the installation
 
 ```bash
-git clone https://github.com/libyal/libevtx.git
+evtxexport --version
+```
+
+### Install libevt
+
+1. Clone the repository libevt
+
+```bash
+git clone https://github.com/libyal/libevt
 cd libevtx
 ```
 
-5. Build and install the library "libevtx"
+2. Build and install the library "libevt"
 
 ```bash
 ./synclibs.sh
@@ -134,16 +142,16 @@ make
 sudo make install
 ```
 
-6. Update the library cache
+3. Update the library cache
 
 ```bash
 sudo ldconfig && cd ..
 ```
 
-7. Checking the installation
+4. Checking the installation
 
 ```bash
-evtxexport --version
+evtexport --version
 ```
 
 ## Build

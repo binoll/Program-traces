@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-#include "../model/data_builder.hpp"
+#include "../data_model/data_builder.hpp"
 
 namespace PrefetchAnalysis {
 
