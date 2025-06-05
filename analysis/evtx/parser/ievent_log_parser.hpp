@@ -11,13 +11,13 @@ namespace EventLogAnalysis {
 
 /// @brief Интерфейс для парсера журналов событий Windows
 class IEventLogParser {
-public:
+ public:
   virtual ~IEventLogParser() = default;
 
-  virtual void OpenLogFile(const std::string& file_path) = 0;
-  virtual void CloseLogFile() = 0;
-  virtual std::vector<std::unique_ptr<IEventData>> ParseEvents() = 0;
-  virtual std::vector<std::unique_ptr<IEventData>> GetEventsByType(uint32_t event_id) = 0;
+  virtual std::vector<std::unique_ptr<IEventData>> ParseEvents(
+      const std::string& file_path) = 0;
+  virtual std::vector<std::unique_ptr<IEventData>> GetEventsByType(
+      const std::string& file_path, uint32_t event_id) = 0;
 };
 
 }
