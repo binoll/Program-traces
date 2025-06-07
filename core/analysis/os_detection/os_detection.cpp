@@ -1,11 +1,9 @@
 #include "os_detection.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <map>
 #include <sstream>
 #include <utility>
-#include <vector>
 
 #include "../../../core/exceptions/os_detection_exception.hpp"
 #include "../../../core/exceptions/registry_exception.hpp"
@@ -13,41 +11,37 @@
 
 std::vector<std::string> split(const std::string& str, const char delimiter) {
   std::vector<std::string> tokens;
-  std::string token;
   std::istringstream token_stream(str);
+  std::string token;
+
   while (std::getline(token_stream, token, delimiter)) {
-    tokens.push_back(token);
+    if (!token.empty()) {
+      tokens.push_back(token);
+    }
   }
   return tokens;
 }
 
 void trim(std::string& str) {
-  str.erase(str.begin(), std::ranges::find_if(str, [](const int ch) {
-              return !std::isspace(ch);
-            }));
-  str.erase(std::find_if(str.rbegin(), str.rend(),
-                         [](const int ch) { return !std::isspace(ch); })
-                .base(),
+  auto is_space = [](const char c) {
+    return std::isspace(static_cast<unsigned char>(c));
+  };
+  str.erase(str.begin(), std::ranges::find_if_not(str, is_space));
+  str.erase(std::find_if_not(str.rbegin(), str.rend(), is_space).base(),
             str.end());
 }
 
 std::string getLastPathComponent(const std::string& path,
                                  const char separator) {
-  if (path.empty()) return path;
+  if (path.empty()) return "";
 
   size_t end = path.length();
-  // Пропускаем завершающие разделители
-  while (end > 0 && path[end - 1] == separator) {
-    --end;
-  }
+  while (end > 0 && path[end - 1] == separator) --end;
   if (end == 0) return "";
 
-  // Находим начало последнего компонента
-  size_t start = path.find_last_of(separator, end - 1);
-  if (start == std::string::npos) {
-    return path.substr(0, end);
-  }
-  return path.substr(start + 1, end - start - 1);
+  const size_t start = path.find_last_of(separator, end - 1);
+  return (start == std::string::npos) ? path.substr(0, end)
+                                      : path.substr(start + 1, end - start - 1);
 }
 
 namespace WindowsVersion {
@@ -62,128 +56,75 @@ OSDetection::OSDetection(
 }
 
 void OSDetection::loadConfiguration() {
-  // Загрузка списка версий
   const std::string version_list = config_.getString("General", "Versions", "");
   if (version_list.empty()) {
-    throw OSDetectionException(
-        "Ошибка конфигурации: Отсутствует параметр 'Versions' в секции "
-        "[General]");
+    throw OSDetectionException("отсутствуют \"Versions\" в разделе [General]");
   }
 
   auto version_names = split(version_list, ',');
   const auto logger = GlobalLogger::get();
 
-  // Загрузка конфигурации для каждой версии
   for (auto& name : version_names) {
     trim(name);
+    if (name.empty()) continue;
+
     VersionConfig cfg;
-
-    // Загрузка пути к файлу реестра
-    cfg.registry_file = config_.getString("RegistryPaths", name, "");
-    if (cfg.registry_file.empty()) {
-      logger->warn("Не указан путь к файлу реестра для версии: {}", name);
-      continue;
-    }
-
-    // Загрузка пути к ключу реестра
+    cfg.registry_file = config_.getString("OSInfoRegistryPaths", name, "");
     cfg.registry_key = config_.getString("OSInfoHive", name, "");
-    if (cfg.registry_key.empty()) {
-      logger->warn("Не указан путь к ключу реестра для версии: {}", name);
-      continue;
-    }
 
-    // Загрузка ключей реестра из конфига
     const std::string config_keys = config_.getString("OSInfoKeys", name, "");
-    if (config_keys.empty()) {
-      logger->warn("Не указаны ключи реестра для версии: {}", name);
-      continue;
-    }
-
-    // Парсинг ключей
-    for (auto keys = split(config_keys, ','); auto& key : keys) {
-      trim(key);
-      if (!key.empty()) {
-        cfg.registry_keys.push_back(key);
+    if (!config_keys.empty()) {
+      for (auto& key : split(config_keys, ',')) {
+        trim(key);
+        if (!key.empty()) {
+          cfg.registry_keys.push_back(std::move(key));
+        }
       }
     }
 
-    if (cfg.registry_keys.empty()) {
-      logger->warn("Список ключей реестра пуст для версии: {}", name);
-      continue;
+    if (!cfg.registry_file.empty() && !cfg.registry_key.empty() &&
+        !cfg.registry_keys.empty()) {
+      version_configs_.emplace(name, std::move(cfg));
+      logger->debug("Загруженная конфигурация для ключей \"{}\": \"{}\"", name,
+                    version_configs_[name].registry_keys.size());
     }
-
-    version_configs_[name] = std::move(cfg);
-    logger->debug("Загружена конфигурация для {}: {} ключей", name,
-                  cfg.registry_keys.size());
   }
 
-  // Загрузка ключевых слов серверных ОС
   const std::string keywords_str =
       config_.getString("OSKeywords", "DefaultServerKeywords", "");
   if (!keywords_str.empty()) {
-    auto keywords = split(keywords_str, ',');
-    for (auto& kw : keywords) {
+    for (auto& kw : split(keywords_str, ',')) {
       trim(kw);
       if (!kw.empty()) {
-        default_server_keywords_.push_back(kw);
+        default_server_keywords_.push_back(std::move(kw));
       }
     }
-    logger->debug("Загружено ключевых слов серверных ОС: {}",
-                  default_server_keywords_.size());
-  } else {
-    logger->debug("Для DefaultServerKeywords не указаны ключевые слова");
   }
 
-  const std::string client_section = "BuildMappingsClient";
-  std::vector<std::string> client_keys;
-  try {
-    client_keys = config_.getKeysInSection(client_section);
-  } catch (const std::exception& e) {
-    logger->warn("Ошибка при получении ключей из секции {}: {}", client_section,
-                 e.what());
-  }
-
-  for (const auto& build_str : client_keys) {
+  auto load_build_mappings = [&](const std::string& section,
+                                 std::map<uint32_t, std::string>& target) {
     try {
-      uint32_t build_num = std::stoul(build_str);
-      const std::string os_name =
-          config_.getString(client_section, build_str, "");
-      if (!os_name.empty()) {
-        client_builds[build_num] = os_name;
+      for (const auto& key : config_.getKeysInSection(section)) {
+        try {
+          uint32_t build_num = std::stoul(key);
+          std::string os_name = config_.getString(section, key, "");
+          if (!os_name.empty()) {
+            target[build_num] = std::move(os_name);
+          }
+        } catch (...) {
+          logger->warn("Недопустимый номер сборки: {}", key);
+        }
       }
-    } catch (const std::exception& e) {
-      logger->warn("Ошибка обработки сборки {}: {}", build_str, e.what());
+    } catch (...) {
     }
-  }
-  logger->debug("Загружено клиентских сборок: {}", client_builds.size());
+  };
 
-  // ЗАГРУЗКА СЕРВЕРНЫХ СБОРОК
-  const std::string server_section = "BuildMappingsServer";
-  std::vector<std::string> server_keys;
-  try {
-    server_keys = config_.getKeysInSection(server_section);
-  } catch (const std::exception& e) {
-    logger->warn("Ошибка при получении ключей из секции {}: {}", server_section,
-                 e.what());
-  }
-
-  for (const auto& build_str : server_keys) {
-    try {
-      uint32_t build_num = std::stoul(build_str);
-      const std::string os_name =
-          config_.getString(server_section, build_str, "");
-      if (!os_name.empty()) {
-        server_builds[build_num] = os_name;
-      }
-    } catch (const std::exception& e) {
-      logger->warn("Ошибка обработки сборки {}: {}", build_str, e.what());
-    }
-  }
-  logger->debug("Загружено серверных сборок: {}", server_builds.size());
+  load_build_mappings("BuildMappingsClient", client_builds);
+  load_build_mappings("BuildMappingsServer", server_builds);
 
   if (version_configs_.empty()) {
     throw OSDetectionException(
-        "Нет корректных конфигураций для определения ОС");
+        "не найдено допустимых конфигураций обнаружения операционной системы");
   }
 }
 
@@ -192,165 +133,125 @@ OSInfo OSDetection::detect() {
   OSInfo info;
   bool detected = false;
 
-  logger->info("Начало определения версии Windows...");
-
   for (const auto& [version_name, cfg] : version_configs_) {
     try {
       const std::string full_path = device_root_path_ + cfg.registry_file;
-
-      logger->debug("Проверка {}. Файл={}. Ключ={}", version_name, full_path,
-                    cfg.registry_key);
-
       const auto values = parser_->getKeyValues(full_path, cfg.registry_key);
-      if (values.empty()) {
-        logger->debug("Ключ реестра не найден для {}", version_name);
-        continue;
-      }
 
-      extractOSInfo(values, info, version_name);
-      detected = true;
-      break;
+      if (!values.empty()) {
+        extractOSInfo(values, info, version_name);
+        detected = true;
+        break;
+      }
     } catch (const std::exception& e) {
-      logger->debug("Ошибка при проверке {}: {}", version_name, e.what());
+      logger->debug("Не удалось выполнить проверку реестра для \"{}\". {}",
+                    version_name, e.what());
     }
   }
 
   if (!detected) {
-    const std::string error = "Не удалось определить версию ОС";
-    logger->error(error);
-    throw OSDetectionException(error);
+    throw OSDetectionException(
+        "не удалось определить версию операционной системы");
   }
 
   determineFullOSName(info);
 
-  logger->info("Операционная система: {}. Сборка: {}", info.fullname_os,
-               info.current_build);
+  logger->info("Версия Windows определена: \"{}\"", info.fullname_os);
+
   return info;
 }
 
 void OSDetection::extractOSInfo(
     const std::vector<std::unique_ptr<RegistryAnalysis::IRegistryData>>& values,
     OSInfo& info, const std::string& version_name) const {
-  const auto logger = GlobalLogger::get();
-
-  // Проверяем наличие конфигурации для данной версии
-  if (!version_configs_.contains(version_name)) {
-    throw OSDetectionException("конфигурация для версии " + version_name +
-                               " не найдена");
-  }
-
   const auto& cfg = version_configs_.at(version_name);
-  bool has_essential_data = false;
+  const auto logger = GlobalLogger::get();
+  bool has_essential = false;
 
-  // Функция для поиска значения в реестре
-  auto findRegistryValue = [&](const std::string& key_name,
-                               std::string& target) {
-    for (const auto& data : values) {
-      if (getLastPathComponent(data->getName()) == key_name) {
-        try {
-          if (data->getType() == RegistryAnalysis::RegistryValueType::REG_SZ ||
-              data->getType() ==
-                  RegistryAnalysis::RegistryValueType::REG_EXPAND_SZ) {
-            target = data->getAsString();
-            logger->debug("Найдено значение реестра: {} = {}", key_name,
-                          target);
-            return true;
-          }
-        } catch (...) {
-          logger->warn("Ошибка чтения параметра: {}", key_name);
-        }
-      }
-    }
-    logger->debug("Параметр не найден: {}", key_name);
-    return false;
-  };
+  std::map<std::string, std::string> value_map;
+  for (const auto& data : values) {
+    const std::string key_name = getLastPathComponent(data->getName(), '/');
+    if (key_name.empty()) continue;
 
-  // Обрабатываем все ключи для данной версии ОС
-  for (const auto& key : cfg.registry_keys) {
-    if (std::string value; findRegistryValue(key, value)) {
-      if (key == "ProductName") {
-        info.product_name = value;
-        has_essential_data = true;
-      } else if (key == "CurrentVersion") {
-        info.current_version = value;
-        has_essential_data = true;
-      } else if (key == "CurrentBuild" || key == "CurrentBuildNumber") {
-        info.current_build = value;
-        has_essential_data = true;
-      } else if (key == "EditionID") {
-        info.edition_id = value;
-      } else if (key == "ReleaseId") {
-        info.release_id = value;
-      } else if (key == "DisplayVersion") {
-        info.display_version = value;
-      } else if (key == "CSDVersion") {
-        info.release_id = value;  // Для обратной совместимости с XP
+    try {
+      if (data->getType() == RegistryAnalysis::RegistryValueType::REG_SZ ||
+          data->getType() ==
+              RegistryAnalysis::RegistryValueType::REG_EXPAND_SZ) {
+        value_map[key_name] = data->getAsString();
       }
+    } catch (...) {
+      logger->warn("Ошибка при чтении значения реестра: {}", key_name);
     }
   }
 
-  // Проверка обязательных полей
-  if (!has_essential_data || info.product_name.empty() ||
+  for (const auto& key : cfg.registry_keys) {
+    auto it = value_map.find(key);
+    if (it == value_map.end()) continue;
+
+    const std::string& value = it->second;
+    if (key == "ProductName") {
+      info.product_name = value;
+      has_essential = true;
+    } else if (key == "CurrentVersion") {
+      info.current_version = value;
+      has_essential = true;
+    } else if (key == "CurrentBuild" || key == "CurrentBuildNumber") {
+      info.current_build = value;
+      has_essential = true;
+    } else if (key == "EditionID") {
+      info.edition_id = value;
+    } else if (key == "ReleaseId") {
+      info.release_id = value;
+    } else if (key == "DisplayVersion") {
+      info.display_version = value;
+    } else if (key == "CSDVersion") {
+      info.release_id = value;
+    }
+  }
+
+  if (!has_essential || info.product_name.empty() ||
       (info.current_version.empty() && info.current_build.empty())) {
-    throw OSDetectionException("Недостаточно данных для определения версии ОС");
+    throw OSDetectionException(
+        "недостаточно данных для обнаружения операционной системы");
   }
 }
 
 void OSDetection::determineFullOSName(OSInfo& info) const {
+  std::string name = info.product_name;
   const bool is_server = isServerSystem(info);
-  std::string name;
 
-  // Пытаемся определить имя ОС по номеру сборки
-  try {
-    const uint32_t build = std::stoul(info.current_build);
-    const auto& build_map = is_server ? server_builds : client_builds;
-    const auto it = build_map.find(build);
-
-    if (it != build_map.end()) {
-      // Если номер сборки найден в карте, используем соответствующее имя
-      name = it->second;
-    } else {
-      // Если не найден, используем стандартное имя продукта
-      name = info.product_name;
+  if (!info.current_build.empty()) {
+    try {
+      uint32_t build_number = std::stoul(info.current_build);
+      const auto& build_map = is_server ? server_builds : client_builds;
+      if (const auto it = build_map.find(build_number); it != build_map.end()) {
+        name = it->second;
+      }
+    } catch (...) {
     }
-  } catch (...) {
-    // При ошибке преобразования используем стандартное имя продукта
-    name = info.product_name;
   }
 
-  if (!info.edition_id.empty()) {
-    name += " " + info.edition_id;
-  }
+  std::ostringstream oss;
+  oss << name;
 
-  if (!info.display_version.empty()) {
-    name += " " + info.display_version;
-  }
+  if (!info.edition_id.empty()) oss << " " << info.edition_id;
+  if (!info.display_version.empty()) oss << " " << info.display_version;
+  if (!info.release_id.empty()) oss << " " << info.release_id;
+  if (!info.current_build.empty()) oss << " " << info.current_build;
 
-  if (!info.release_id.empty()) {
-    name += " " + info.release_id;
-  }
-
-  if (!info.release_id.empty()) {
-    name += " " + info.current_build;
-  }
-
-  info.fullname_os = name;
+  info.fullname_os = oss.str();
 }
 
 bool OSDetection::isServerSystem(const OSInfo& info) const {
-  const std::string& product = info.product_name;
-  const std::string& edition = info.edition_id;
-
-  auto containsKeyword = [&](const std::string& str) {
-    for (const auto& keyword : default_server_keywords_) {
-      if (str.find(keyword) != std::string::npos) {
-        return true;
-      }
-    }
-    return false;
+  auto contains_keyword = [&](const std::string& text) {
+    return std::ranges::any_of(default_server_keywords_,
+                               [&](const std::string& kw) {
+                                 return text.find(kw) != std::string::npos;
+                               });
   };
 
-  return containsKeyword(product) || containsKeyword(edition);
+  return contains_keyword(info.product_name) ||
+         contains_keyword(info.edition_id);
 }
 
 }

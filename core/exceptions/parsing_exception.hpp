@@ -26,7 +26,7 @@ class ParsingException : public std::runtime_error {
   /// @brief Конструктор исключения
   /// @param[in] message Описание ошибки
   explicit ParsingException(const std::string& message)
-      : std::runtime_error("Ошибка парсинга, " + message) {}
+      : std::runtime_error(message) {}
 
   /// @brief Виртуальный деструктор
   ~ParsingException() noexcept override = default;

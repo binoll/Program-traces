@@ -73,10 +73,10 @@ class InvalidValueAccess : public RegistryException {
   explicit InvalidValueAccess(const std::string& expected_type,
                               const std::string& actual_type,
                               const std::string& value_name = "")
-      : RegistryException(fmt::format("Некорректный доступ к значению \"{}\": "
-                                      "ожидался тип {}, фактический тип {}",
-                                      value_name, expected_type, actual_type)) {
-  }
+      : RegistryException(
+            fmt::format("Некорректный доступ к значению \"{}\": "
+                        "ожидался тип \"{}\", фактический тип \"{}\"",
+                        value_name, expected_type, actual_type)) {}
 };
 
 /// @class ValueConversionError
@@ -85,8 +85,9 @@ class ValueConversionError : public RegistryException {
  public:
   explicit ValueConversionError(const std::string& value_name,
                                 const std::string& details)
-      : RegistryException(fmt::format("Ошибка преобразования значения \"{}\": {}",
-                                      value_name, details)) {}
+      : RegistryException(
+            fmt::format("Ошибка преобразования значения \"{}\": \"{}\"",
+                        value_name, details)) {}
 };
 
 /// @class UnsupportedTypeError
@@ -105,10 +106,10 @@ class TypeCompatibilityError : public RegistryException {
   explicit TypeCompatibilityError(const std::string& expected_type,
                                   const std::string& actual_type,
                                   const std::string& value_name = "")
-      : RegistryException(fmt::format("Несовместимость типов для значения "
-                                      "\"{}\": ожидался {}, фактический {}",
-                                      value_name, expected_type, actual_type)) {
-  }
+      : RegistryException(
+            fmt::format("Несовместимость типов для значения "
+                        "\"{}\": ожидался \"{}\", фактический \"{}\"",
+                        value_name, expected_type, actual_type)) {}
 };
 
 /// @class RegistryNotOpenError
@@ -116,8 +117,8 @@ class TypeCompatibilityError : public RegistryException {
 class RegistryNotOpenError : public RegistryException {
  public:
   explicit RegistryNotOpenError(const std::string& details)
-      : RegistryException(
-            fmt::format("Ошибка доступа к неоткрытому реестру: {}", details)) {}
+      : RegistryException(fmt::format(
+            "Ошибка доступа к неоткрытому реестру: \"{}\"", details)) {}
 };
 
 /// @class InvalidPathError
@@ -125,7 +126,8 @@ class RegistryNotOpenError : public RegistryException {
 class InvalidPathError : public RegistryException {
  public:
   explicit InvalidPathError(const std::string& path)
-      : RegistryException(fmt::format("Неверный путь в реестре: {}", path)) {}
+      : RegistryException(
+            fmt::format("Неверный путь в реестре: \"{}\"", path)) {}
 };
 
 }

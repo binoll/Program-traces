@@ -1,3 +1,6 @@
+/// @file os_detection_exception.hpp
+/// @brief Исключения, возникающее при ошибках определения операционной системы
+
 #pragma once
 
 #include <stdexcept>
@@ -5,16 +8,13 @@
 
 namespace WindowsVersion {
 
+/// @brief Исключение, возникающее при ошибках определения операционной системы
 class OSDetectionException : public std::runtime_error {
-public:
+ public:
+  /// @brief Конструктор исключения
+  /// @param message Сообщение об ошибке
   explicit OSDetectionException(const std::string& message)
-      : std::runtime_error("Ошибка обнаружения операционной системы: " + message) {}
-};
-
-class RegistryKeyNotFoundException : public OSDetectionException {
-public:
-  explicit RegistryKeyNotFoundException(const std::string& key_path)
-      : OSDetectionException("Раздел реестра не найден: " + key_path) {}
+      : std::runtime_error(message) {}
 };
 
 }

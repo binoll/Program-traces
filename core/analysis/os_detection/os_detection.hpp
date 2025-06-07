@@ -1,3 +1,6 @@
+/// @file os_detection.hpp
+/// @brief Реализация определения версии Windows через анализ реестра
+
 #pragma once
 
 #include <map>
@@ -12,11 +15,22 @@
 #include "ios_detection.hpp"
 #include "os_info.hpp"
 
+/// @brief Разделяет строку на подстроки по указанному разделителю
+/// @param str Исходная строка для разделения
+/// @param delimiter Символ-разделитель
+/// @return Вектор подстрок
 static std::vector<std::string> split(const std::string& str, char delimiter);
 
+/// @brief Удаляет пробельные символы в начале и конце строки
+/// @param str Строка для обработки (изменяется на месте)
 static void trim(std::string& str);
 
-std::string getLastPathComponent(const std::string& path, char separator = '/');
+/// @brief Извлекает последний компонент из пути
+/// @param path Путь в файловой системе
+/// @param separator Разделитель пути
+/// @return Последний компонент пути
+static std::string getLastPathComponent(const std::string& path,
+                                        char separator);
 
 namespace WindowsVersion {
 
@@ -24,54 +38,64 @@ namespace WindowsVersion {
 struct VersionConfig {
   std::string registry_file;  ///< Путь к файлу реестра
   std::string registry_key;   ///< Путь к ключу в реестре
-  std::map<std::string, std::string> registry_values;  ///< Ключи и их имена
-  std::vector<std::string> registry_keys;
+  std::vector<std::string>
+      registry_keys;  ///< Список имен параметров реестра для извлечения
 };
 
-/// @class OSDetection
-/// @brief Реализация определения версии Windows на основе данных реестра
+/// @brief Реализация определения версии Windows через анализ реестра
 class OSDetection final : public IOSDetection {
  public:
-  /// @brief Конструктор
-  /// @param parser Указатель на парсер реестра
-  /// @param config Конфигурация для определения версий
-  /// @param device_root_path Путь к корневой директории устройства (например,
-  /// "C:")
+  /// @brief Конструктор объекта определения ОС
+  /// @param parser Реализация парсера реестра
+  /// @param config Параметры конфигурации
+  /// @param device_root_path Корневой путь целевого устройства
   OSDetection(std::unique_ptr<RegistryAnalysis::IRegistryParser> parser,
               Config&& config, std::string device_root_path);
 
+  /// @brief Деструктор по умолчанию
   ~OSDetection() override = default;
 
   /// @brief Определяет версию Windows
-  /// @return Информация об операционной системе
-  /// @throw OSDetectionException при ошибке определения версии
+  /// @return Структура с информацией об ОС
+  /// @throws OSDetectionException при ошибке определения
   [[nodiscard]] OSInfo detect() override;
 
  private:
-  /// @brief Загружает конфигурации из файла
+  /// @brief Загружает конфигурацию для определения ОС
+  /// @throws OSDetectionException при невалидной конфигурации
   void loadConfiguration();
 
   /// @brief Извлекает информацию об ОС из значений реестра
+  /// @param values Значения реестра для обработки
+  /// @param info Структура OSInfo для заполнения
+  /// @param version_name Имя версии конфигурации
   void extractOSInfo(
       const std::vector<std::unique_ptr<RegistryAnalysis::IRegistryData>>&
           values,
       OSInfo& info, const std::string& version_name) const;
 
-  /// @brief Определяет точное название ОС
+  /// @brief Формирует полное название ОС из компонентов
+  /// @param info Структура OSInfo для финализации
   void determineFullOSName(OSInfo& info) const;
 
-  /// @brief Проверяет серверную версию ОС
+  /// @brief Проверяет, является ли ОС серверной редакцией
+  /// @param info Структура OSInfo для проверки
+  /// @return True для серверной редакции, false иначе
   bool isServerSystem(const OSInfo& info) const;
 
   std::unique_ptr<RegistryAnalysis::IRegistryParser>
-      parser_;                    ///< Парсер реестра
-  Config config_;                 ///< Конфигурация
+      parser_;                    ///< Экземпляр парсера реестра
+  Config config_;                 ///< Параметры конфигурации
   std::string device_root_path_;  ///< Корневой путь устройства
   std::map<std::string, VersionConfig>
       version_configs_;  ///< Конфигурации версий
-  std::vector<std::string> default_server_keywords_;
-  std::map<uint32_t, std::string> client_builds;
-  std::map<uint32_t, std::string> server_builds;
+  std::vector<std::string>
+      default_server_keywords_;  ///< Ключевые слова для идентификации серверных
+                                 ///< редакций
+  std::map<uint32_t, std::string>
+      client_builds;  ///< Соответствия номеров сборок клиентских версий
+  std::map<uint32_t, std::string>
+      server_builds;  ///< Соответствия номеров сборок серверных версий
 };
 
 }
