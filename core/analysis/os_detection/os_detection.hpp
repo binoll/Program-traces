@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "../../analysis/registry/parser/iparser.hpp"
 #include "../../core/exceptions/os_detection_exception.hpp"
+#include "../../parsers/registry/parser/iparser.hpp"
 #include "../../utils/config/config.hpp"
 #include "../../utils/logging/logger.hpp"
 #include "ios_detection.hpp"
