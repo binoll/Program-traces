@@ -223,7 +223,7 @@ OSInfo OSDetection::detect() {
 
   determineFullOSName(info);
 
-  logger->info("Операционная система: {}. Сборка: {}", info.full_os_name,
+  logger->info("Операционная система: {}. Сборка: {}", info.fullname_os,
                info.current_build);
   return info;
 }
@@ -334,7 +334,7 @@ void OSDetection::determineFullOSName(OSInfo& info) const {
     name += " " + info.current_build;
   }
 
-  info.full_os_name = name;
+  info.fullname_os = name;
 }
 
 bool OSDetection::isServerSystem(const OSInfo& info) const {

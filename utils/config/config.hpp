@@ -110,6 +110,9 @@ class Config {
   [[nodiscard]] bool hasKey(const std::string& section,
                             const std::string& key) const noexcept;
 
+  std::vector<std::string> getKeysInSection(
+      const std::string& section_name) const;
+
   /// @}
 
  private:
@@ -118,4 +121,5 @@ class Config {
   std::string filename_;  ///< Путь к конфигурационному файлу
   bool useMultiKey_;      ///< Поддержка нескольких ключей
   bool useMultiLine_;     ///< Поддержка многострочных значений
+  std::map<std::string, std::map<std::string, std::string>> data_;
 };

@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include "../../core/analysis/program_analysis/analysis_data.hpp"
+#include "../../core/analysis/program_analysis/data/analysis_data.hpp"
 #include "../../core/exceptions/csv_export_exception.hpp"
 
 namespace WindowsDiskAnalysis {

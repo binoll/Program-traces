@@ -75,7 +75,7 @@ void GlobalLogger::initialize() {
     });
 
     logger_->info("Логгер успешно инициализирован");
-    logger_->debug("Путь к логам: {}", log_path_);
+    logger_->debug("Путь к логам: \"{}\"", log_path_);
 
   } catch (const spdlog::spdlog_ex& ex) {
     throw LoggerInitException("Исключение spdlog: " + std::string(ex.what()));

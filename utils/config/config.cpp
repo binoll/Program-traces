@@ -14,7 +14,7 @@ Config::Config(std::string filename, const bool useMultiKey,
       useMultiKey_(useMultiKey),
       useMultiLine_(useMultiLine) {
   const auto logger = GlobalLogger::get();
-  logger->info("Загрузка конфигурации из файла: {}", filename_);
+  logger->info("Загрузка конфигурации из файла: \"{}\"", filename_);
   reload();
 }
 
@@ -33,7 +33,7 @@ void Config::reload() const {
   ini_->SetUnicode(true);
 
   // Загрузка файла через указатель
-  if (SI_Error rc = ini_->LoadFile(filename_.c_str()); rc != SI_OK) {
+  if (const SI_Error rc = ini_->LoadFile(filename_.c_str()); rc != SI_OK) {
     throw ConfigFileException(filename_);
   }
   logger->debug("Конфигурация успешно загружена");
@@ -51,7 +51,7 @@ std::string Config::getString(const std::string& section,
 }
 
 int Config::getInt(const std::string& section, const std::string& key,
-                   int defaultValue) const {
+                   const int defaultValue) const {
   const char* value = ini_->GetValue(section.c_str(), key.c_str(), nullptr);
   if (!value) {
     return defaultValue;
@@ -138,4 +138,29 @@ bool Config::hasSection(const std::string& section) const noexcept {
 bool Config::hasKey(const std::string& section,
                     const std::string& key) const noexcept {
   return ini_->GetValue(section.c_str(), key.c_str(), nullptr) != nullptr;
+}
+
+std::vector<std::string> Config::getKeysInSection(
+    const std::string& section_name) const {
+  std::vector<std::string> keys;
+
+  // Проверка существования секции
+  if (!hasSection(section_name)) {
+    return keys;
+  }
+
+  // Получаем все ключи из секции
+  CSimpleIniA::TNamesDepend keysDepend;
+  if (ini_->GetAllKeys(section_name.c_str(), keysDepend)) {
+    // Сортировка по порядку загрузки (опционально)
+    keysDepend.sort(CSimpleIniA::Entry::LoadOrder());
+
+    // Преобразование в вектор строк
+    keys.reserve(keysDepend.size());
+    for (const auto& key : keysDepend) {
+      keys.push_back(key.pItem);
+    }
+  }
+
+  return keys;
 }
