@@ -24,7 +24,7 @@ class IOSDetection {
 
   /// @brief Определяет информацию о версии Windows
   /// @return Структура OSInfo с данными об операционной системе
-  [[nodiscard]] virtual OSInfo detect() const = 0;
+  [[nodiscard]] virtual OSInfo detect() = 0;
 
   /// @}
 };
