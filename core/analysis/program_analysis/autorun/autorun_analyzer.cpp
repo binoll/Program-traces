@@ -48,7 +48,7 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
     trim(version);
     if (version.empty()) continue;
 
-    AutorunConfig cfg;
+    IniConfig cfg;
 
     // Загрузка пути к файлу куста реестра
     std::string reg_path = config.getString(version, "RegistryPath", "");
@@ -80,7 +80,8 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
 
     configs_[version] = cfg;
     logger->debug(
-        "Загружена конфигурация для {}: куст реестра [{}], {} ключей, {} "
+        "Загружена конфигурация для \"{}\": куст реестра \"{}\", \"{}\" "
+        "ключей, \"{}\" "
         "путей ФС",
         version, cfg.registry_path.empty() ? "по умолчанию" : cfg.registry_path,
         cfg.registry_locations.size(), cfg.filesystem_paths.size());
@@ -110,7 +111,7 @@ std::vector<AutorunEntry> AutorunAnalyzer::collect(
   results.insert(results.end(), std::make_move_iterator(fs_entries.begin()),
                  std::make_move_iterator(fs_entries.end()));
 
-  logger->info("Найдено {} записей автозапуска", results.size());
+  logger->info("Найдено \"{}\" записей автозапуска", results.size());
   return results;
 }
 
@@ -122,13 +123,14 @@ std::vector<AutorunEntry> AutorunAnalyzer::analyzeRegistry(
 
   // Проверка доступности пути к кусту реестра
   if (cfg.registry_path.empty()) {
-    logger->warn("Для версии {} не указан путь к кусту реестра", os_version_);
+    logger->warn("Для версии \"{}\" не указан путь к кусту реестра",
+                 os_version_);
     return entries;
   }
 
   const std::string full_reg_path = disk_root + cfg.registry_path;
   if (!std::filesystem::exists(full_reg_path)) {
-    logger->warn("Файл куста реестра не найден: {}", full_reg_path);
+    logger->warn("Файл куста реестра не найден: \"{}\"", full_reg_path);
     return entries;
   }
 
@@ -160,7 +162,7 @@ std::vector<AutorunEntry> AutorunAnalyzer::analyzeRegistry(
         }
       }
     } catch (const std::exception& e) {
-      logger->warn("Пропущен ключ реестра {}: {}", location, e.what());
+      logger->warn("Пропущен ключ реестра \"{}\": \"{}\"", location, e.what());
     }
   }
 
@@ -186,7 +188,7 @@ std::vector<AutorunEntry> AutorunAnalyzer::analyzeFilesystem(
         }
       }
     } catch (const std::exception& e) {
-      logger->warn("Пропущен путь ФС {}: {}", path, e.what());
+      logger->warn("Пропущен путь ФС \"{}\": \"{}\"", path, e.what());
     }
   }
 
