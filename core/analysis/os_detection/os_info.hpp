@@ -24,4 +24,13 @@ struct OSInfo {
   std::string
       fullname_os;  ///< Полное системное название ОС с деталями (например
                     ///< "Microsoft Windows 11 Pro 10.0.22000")
+  std::string ini_version; ///< Версия ОС, расположенная в .ini файлах
+};
+
+/// @brief Конфигурация для определения версии ОС
+struct VersionConfig {
+  std::string registry_file;  ///< Путь к файлу реестра
+  std::string registry_key;   ///< Путь к ключу в реестре
+  std::vector<std::string>
+      registry_keys;  ///< Список имен параметров реестра для извлечения
 };

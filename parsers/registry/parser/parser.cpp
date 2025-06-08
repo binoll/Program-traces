@@ -26,8 +26,8 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
     const std::string& registry_key_path) {
   const auto logger = GlobalLogger::get();
 
-  logger->info("Начало обработки файла реестра: {}", registry_file_path);
-  logger->debug("Получение значений ключа {} из {}", registry_key_path,
+  logger->debug("Начало обработки файла реестра: \"{}\"", registry_file_path);
+  logger->debug("Получение значений ключа \"{}\" из \"{}\"", registry_key_path,
                 registry_file_path);
 
   openRegistryFile(registry_file_path);
@@ -38,22 +38,23 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
   int32_t value_count = 0;
   if (libregf_key_get_number_of_values(key_handle.getPtr(), &value_count,
                                        nullptr) != 1) {
-    logger->warn("Не удалось получить количество значений для ключа: {}",
+    logger->warn("Не удалось получить количество значений для ключа: \"{}\"",
                  registry_key_path);
     return results;
   }
 
-  logger->debug("Найдено значений в ключе: {}", value_count);
+  logger->debug("Найдено значений в ключе: \"{}\"", value_count);
 
   // Обрабатываем все значения в ключе
   for (int value_index = 0; value_index < value_count; ++value_index) {
-    logger->debug("Начало обработки значения с индексом: {}", value_index);
+    logger->debug("Начало обработки значения с индексом: \"{}\"", value_index);
 
     ValueHandle value_handle;
     if (libregf_key_get_value_by_index(key_handle.getPtr(), value_index,
                                        value_handle.getAddressOfPtr(),
                                        nullptr) != 1) {
-      logger->warn("Не удалось получить значение по индексу: {}", value_index);
+      logger->warn("Не удалось получить значение по индексу: \"{}\"",
+                   value_index);
       continue;  // Пропускаем недоступные значения
     }
 
@@ -76,7 +77,7 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
         const size_t actual_length =
             strnlen(name_buffer.data(), name_buffer_size);
         actual_value_name.assign(name_buffer.data(), actual_length);
-        logger->debug("Имя значения: {}", actual_value_name);
+        logger->debug("Имя значения: \"{}\"", actual_value_name);
       }
     } else {
       logger->debug("Значение не имеет имени (по умолчанию)");
@@ -88,9 +89,9 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
       full_value_path += '/';
       full_value_path += actual_value_name;
     } else {
-      full_value_path += "/(default)";
+      full_value_path += "/";
     }
-    logger->debug("Полный путь к значению: {}", full_value_path);
+    logger->debug("Полный путь к значению: \"{}\"", full_value_path);
 
     // Создаем объект данных
     try {
@@ -101,20 +102,18 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
         logger->warn("Не удалось создать объект данных для значения");
       }
     } catch (const RegistryException& e) {
-      logger->error("Ошибка при создании объекта данных: {}", e.what());
+      logger->error("Ошибка при создании объекта данных: \"{}\"", e.what());
     }
   }
 
-  logger->debug("Возвращено {} значений для ключа: {}", results.size(),
+  logger->debug("Возвращено \"{}\" значений для ключа: \"{}\"", results.size(),
                 registry_key_path);
-  logger->info("Файл успешно обработан");
+  logger->debug("Файл успешно обработан");
   return results;
 }
 
 void RegistryParser::openRegistryFile(const std::string& registry_file_path) {
   const auto logger = GlobalLogger::get();
-
-  logger->debug("Инициализация парсера реестра");
 
   if (regf_file_handle_) {
     closeRegistryFile();
@@ -124,7 +123,7 @@ void RegistryParser::openRegistryFile(const std::string& registry_file_path) {
     throw InitLibError("libregf");
   }
 
-  logger->debug("Открытие файла: {}", registry_file_path);
+  logger->debug("Открытие файла: \"{}\"", registry_file_path);
 
   if (libregf_file_open(regf_file_handle_, registry_file_path.c_str(),
                         LIBREGF_OPEN_READ, nullptr) != 1) {
@@ -147,7 +146,7 @@ void RegistryParser::closeRegistryFile() {
 
 KeyHandle RegistryParser::findRegistryKey(const std::string& key_path) const {
   const auto logger = GlobalLogger::get();
-  logger->debug("Поиск ключа реестра: {}", key_path);
+  logger->debug("Поиск ключа реестра: \"{}\"", key_path);
 
   if (!regf_file_handle_) {
     throw RegistryNotOpenError("файл реестра не открыт");
@@ -175,7 +174,7 @@ KeyHandle RegistryParser::findRegistryKey(const std::string& key_path) const {
       const std::string key_component =
           key_path.substr(start_pos, end_pos - start_pos);
 
-      logger->debug("Обработка компонента: {}", key_component);
+      logger->debug("Обработка компонента: \"{}\"", key_component);
 
       KeyHandle next_key;
       const auto* name_ptr =
@@ -195,7 +194,7 @@ KeyHandle RegistryParser::findRegistryKey(const std::string& key_path) const {
   // Обработка последнего компонента пути
   if (start_pos < key_path.size()) {
     const std::string last_component = key_path.substr(start_pos);
-    logger->debug("Обработка последнего компонента: {}", last_component);
+    logger->debug("Обработка последнего компонента: \"{}\"", last_component);
 
     KeyHandle next_key;
     const auto* name_ptr =
@@ -209,14 +208,14 @@ KeyHandle RegistryParser::findRegistryKey(const std::string& key_path) const {
     current_key = std::move(next_key);
   }
 
-  logger->debug("Ключ успешно найден: {}", key_path);
+  logger->debug("Ключ успешно найден: \"{}\"", key_path);
   return current_key;
 }
 
 ValueHandle RegistryParser::findRegistryValue(libregf_key_t* registry_key,
                                               const std::string& value_name) {
   const auto logger = GlobalLogger::get();
-  logger->debug("Поиск значения: {}", value_name);
+  logger->debug("Поиск значения: \"{}\"", value_name);
 
   if (!registry_key) {
     throw RegistryException("Передан нулевой указатель на ключ реестра");
@@ -233,11 +232,11 @@ ValueHandle RegistryParser::findRegistryValue(libregf_key_t* registry_key,
   if (libregf_key_get_value_by_utf8_name(registry_key, name_ptr, name_length,
                                          value_handle.getAddressOfPtr(),
                                          nullptr) != 1) {
-    logger->warn("Значение не найдено: {}", value_name);
+    logger->warn("Значение не найдено: \"{}\"", value_name);
     return ValueHandle();  // Возвращаем пустой handle
   }
 
-  logger->debug("Значение найдено: {}", value_name);
+  logger->debug("Значение найдено: \"{}\"", value_name);
   return value_handle;
 }
 
@@ -246,7 +245,7 @@ std::unique_ptr<IRegistryData> RegistryParser::getSpecificValue(
     const std::string& registry_value_path) {
   const auto logger = GlobalLogger::get();
 
-  logger->debug("Получение конкретного значения: {}", registry_value_path);
+  logger->debug("Получение конкретного значения: \"{}\"", registry_value_path);
   openRegistryFile(registry_file_path);
 
   // Разделяем путь на ключ и имя значения
@@ -258,13 +257,14 @@ std::unique_ptr<IRegistryData> RegistryParser::getSpecificValue(
   const std::string key_path = registry_value_path.substr(0, last_separator);
   const std::string value_name = registry_value_path.substr(last_separator + 1);
 
-  logger->debug("Путь к ключу {}, имя значения {}", key_path, value_name);
+  logger->debug("Путь к ключу \"{}\", имя значения \"{}\"", key_path,
+                value_name);
 
   KeyHandle key_handle = findRegistryKey(key_path);
   ValueHandle value_handle = findRegistryValue(key_handle.getPtr(), value_name);
 
   if (!value_handle) {
-    logger->warn("Значение не найдено: {}", registry_value_path);
+    logger->warn("Значение не найдено: \"{}\"", registry_value_path);
     return nullptr;
   }
 
@@ -315,7 +315,7 @@ RegistryValueType RegistryParser::convertValueType(uint32_t libregf_type) {
       return RegistryValueType::REG_RESOURCE_LIST;
     case LIBREGF_VALUE_TYPE_UNDEFINED:
     default:
-      logger->warn("Неизвестный или неподдерживаемый тип реестра: {}",
+      logger->warn("Неизвестный или неподдерживаемый тип реестра: \"{}\"",
                    libregf_type);
       return RegistryValueType::REG_NONE;
   }
@@ -333,7 +333,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
   }
 
   const RegistryValueType value_type = convertValueType(raw_value_type);
-  logger->debug("Обработка данных значения. Тип значения: {}",
+  logger->debug("Обработка данных значения. Тип значения: \"{}\"",
                 static_cast<uint32_t>(value_type));
 
   // Обработка строковых значений
@@ -380,7 +380,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
     return;
   }
 
-  logger->debug("Размер данных значения: {}", data_size);
+  logger->debug("Размер данных значения: \"{}\"", data_size);
   std::vector<uint8_t> data_buffer(data_size);
   if (libregf_value_get_value_data(value_handle, data_buffer.data(), data_size,
                                    nullptr) != 1) {
@@ -400,7 +400,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
         memcpy(&dword_value, data_buffer.data(), sizeof(dword_value));
         builder.setDword(dword_value);
       } else {
-        logger->warn("Некорректный размер данных для DWORD: {}", data_size);
+        logger->warn("Некорректный размер данных для DWORD: \"{}\"", data_size);
       }
       break;
 
@@ -413,7 +413,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
             static_cast<uint32_t>(data_buffer[3]);
         builder.setDwordBigEndian(dword_value);
       } else {
-        logger->warn("Некорректный размер данных для big-endian DWORD: {}",
+        logger->warn("Некорректный размер данных для big-endian DWORD: \"{}\"",
                      data_size);
       }
       break;
@@ -424,7 +424,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
         memcpy(&qword_value, data_buffer.data(), sizeof(qword_value));
         builder.setQword(qword_value);
       } else {
-        logger->warn("Некорректный размер данных для QWORD: {}", data_size);
+        logger->warn("Некорректный размер данных для QWORD: \"{}\"", data_size);
       }
       break;
 
@@ -450,7 +450,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
     }
 
     default:
-      logger->warn("Неподдерживаемый тип значения для обработки: {}",
+      logger->warn("Неподдерживаемый тип значения для обработки: \"{}\"",
                    static_cast<uint32_t>(value_type));
       break;
   }

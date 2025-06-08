@@ -12,35 +12,11 @@
 #include "../../../parsers/registry/parser/iparser.hpp"
 #include "../../../utils/config/config.hpp"
 #include "../../../utils/logging/logger.hpp"
+#include "../../../utils/utils.hpp"
 #include "ios_detection.hpp"
 #include "os_info.hpp"
 
-/// @brief Разделяет строку на подстроки по указанному разделителю
-/// @param str Исходная строка для разделения
-/// @param delimiter Символ-разделитель
-/// @return Вектор подстрок
-static std::vector<std::string> split(const std::string& str, char delimiter);
-
-/// @brief Удаляет пробельные символы в начале и конце строки
-/// @param str Строка для обработки (изменяется на месте)
-static void trim(std::string& str);
-
-/// @brief Извлекает последний компонент из пути
-/// @param path Путь в файловой системе
-/// @param separator Разделитель пути
-/// @return Последний компонент пути
-static std::string getLastPathComponent(const std::string& path,
-                                        char separator);
-
 namespace WindowsVersion {
-
-/// @brief Конфигурация для определения версии ОС
-struct VersionConfig {
-  std::string registry_file;  ///< Путь к файлу реестра
-  std::string registry_key;   ///< Путь к ключу в реестре
-  std::vector<std::string>
-      registry_keys;  ///< Список имен параметров реестра для извлечения
-};
 
 /// @brief Реализация определения версии Windows через анализ реестра
 class OSDetection final : public IOSDetection {

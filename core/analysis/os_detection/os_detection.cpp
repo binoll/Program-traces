@@ -9,41 +9,6 @@
 #include "../../../core/exceptions/registry_exception.hpp"
 #include "os_info.hpp"
 
-std::vector<std::string> split(const std::string& str, const char delimiter) {
-  std::vector<std::string> tokens;
-  std::istringstream token_stream(str);
-  std::string token;
-
-  while (std::getline(token_stream, token, delimiter)) {
-    if (!token.empty()) {
-      tokens.push_back(token);
-    }
-  }
-  return tokens;
-}
-
-void trim(std::string& str) {
-  auto is_space = [](const char c) {
-    return std::isspace(static_cast<unsigned char>(c));
-  };
-  str.erase(str.begin(), std::ranges::find_if_not(str, is_space));
-  str.erase(std::find_if_not(str.rbegin(), str.rend(), is_space).base(),
-            str.end());
-}
-
-std::string getLastPathComponent(const std::string& path,
-                                 const char separator) {
-  if (path.empty()) return "";
-
-  size_t end = path.length();
-  while (end > 0 && path[end - 1] == separator) --end;
-  if (end == 0) return "";
-
-  const size_t start = path.find_last_of(separator, end - 1);
-  return (start == std::string::npos) ? path.substr(0, end)
-                                      : path.substr(start + 1, end - start - 1);
-}
-
 namespace WindowsVersion {
 
 OSDetection::OSDetection(
@@ -140,6 +105,7 @@ OSInfo OSDetection::detect() {
 
       if (!values.empty()) {
         extractOSInfo(values, info, version_name);
+        info.ini_version = version_name;
         detected = true;
         break;
       }

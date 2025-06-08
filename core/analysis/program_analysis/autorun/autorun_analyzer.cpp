@@ -5,28 +5,6 @@
 #include "../../../../utils/config/config.hpp"
 #include "../../../../utils/logging/logger.hpp"
 
-std::vector<std::string> split(const std::string& str, const char delimiter) {
-  std::vector<std::string> tokens;
-  std::istringstream token_stream(str);
-  std::string token;
-
-  while (std::getline(token_stream, token, delimiter)) {
-    if (!token.empty()) {
-      tokens.push_back(token);
-    }
-  }
-  return tokens;
-}
-
-void trim(std::string& str) {
-  auto is_space = [](const char c) {
-    return std::isspace(static_cast<unsigned char>(c));
-  };
-  str.erase(str.begin(), std::ranges::find_if_not(str, is_space));
-  str.erase(std::find_if_not(str.rbegin(), str.rend(), is_space).base(),
-            str.end());
-}
-
 namespace WindowsDiskAnalysis {
 
 AutorunAnalyzer::AutorunAnalyzer(
@@ -48,7 +26,7 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
     trim(version);
     if (version.empty()) continue;
 
-    IniConfig cfg;
+    AutorunConfig cfg;
 
     // Загрузка пути к файлу куста реестра
     std::string reg_path = config.getString(version, "RegistryPath", "");

@@ -18,7 +18,7 @@ namespace PrefetchAnalysis {
 ///    - Размер файла
 ///    - Флаги доступа
 ///    - Время последнего обращения
-class FileMetric final {
+class FileMetric {
  public:
   /// @name Основные методы класса
   /// @{
@@ -81,11 +81,11 @@ class FileMetric final {
   /// @}
 
  private:
-  const std::string filename_;       ///< Абсолютный путь к файлу
-  const uint64_t file_reference_;    ///< Идентификатор MFT-записи
-  const uint64_t file_size_;         ///< Размер файла в байтах
-  const uint32_t access_flags_;      ///< Битовая маска флагов доступа
-  const uint64_t last_access_time_;  ///< Время последнего обращения
+  std::string filename_;       ///< Абсолютный путь к файлу
+  uint64_t file_reference_;    ///< Идентификатор MFT-записи
+  uint64_t file_size_;         ///< Размер файла в байтах
+  uint32_t access_flags_;      ///< Битовая маска флагов доступа
+  uint64_t last_access_time_;  ///< Время последнего обращения
 };
 
 }

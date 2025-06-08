@@ -29,30 +29,38 @@ std::unique_ptr<IPrefetchData> PrefetchParser::parse(
     const std::string& path) const {
   const auto logger = GlobalLogger::get();
 
-  logger->info("Начало обработки файла: {}", path);
+  logger->info("Начало обработки файла: \"{}\"", path);
 
   if (libscca_file_open(scca_handle_, path.c_str(), LIBSCCA_ACCESS_FLAG_READ,
                         nullptr) != 1) {
     throw FileOpenException(path);
   }
 
+  PrefetchDataBuilder builder;
+
+  parseBasicInfo(builder);
+
   try {
-    PrefetchDataBuilder builder;
-
-    parseBasicInfo(builder);
     parseRunTimes(builder);
-    parseVolumes(builder);
-    parseMetrics(builder);
-
-    logger->info("Файл успешно обработан");
-
-    libscca_file_close(scca_handle_, nullptr);
-    return builder.build();
   } catch (...) {
-    libscca_file_close(scca_handle_, nullptr);
-    logger->error("Ошибка при обработке файла: {}", path);
-    throw;
+    logger->error("Ошибка при обработке файла: \"{}\"", path);
   }
+
+  try {
+    parseVolumes(builder);
+  } catch (...) {
+    logger->error("Ошибка при обработке файла: \"{}\"", path);
+  }
+
+  try {
+    parseMetrics(builder);
+  } catch (...) {
+    logger->error("Ошибка при обработке файла: \"{}\"", path);
+  }
+
+  logger->info("Файл успешно обработан");
+  libscca_file_close(scca_handle_, nullptr);
+  return builder.build();
 }
 
 void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& builder) const {
@@ -123,7 +131,7 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& builder) const {
       builder.addRunTime(unix_time);
       valid_times.push_back(filetime);
     } catch (const InvalidTimestampException& e) {
-      logger->warn("Некорректная метка времени: {}", e.what());
+      logger->warn("Некорректная метка времени: \"{}\"", e.what());
     }
   }
 
@@ -148,7 +156,7 @@ void PrefetchParser::parseVolumes(PrefetchDataBuilder& builder) const {
     libscca_volume_information_t* vol_info = nullptr;
     if (libscca_file_get_volume_information(scca_handle_, i, &vol_info,
                                             nullptr) != 1) {
-      logger->warn("Ошибка чтения информации о томе {}", i);
+      logger->warn("Ошибка чтения информации о томе \"{}\"", i);
       continue;
     }
 
@@ -183,7 +191,7 @@ void PrefetchParser::parseVolumes(PrefetchDataBuilder& builder) const {
     try {
       builder.addVolume(VolumeInfo(normalized_path, serial, creation_time));
     } catch (const std::exception& e) {
-      logger->error("Ошибка обработки тома {}: {}", normalized_path, e.what());
+      logger->error("Ошибка обработки тома \"{}\": {}", normalized_path, e.what());
     }
 
     libscca_volume_information_free(&vol_info, nullptr);
@@ -205,7 +213,7 @@ void PrefetchParser::parseMetrics(PrefetchDataBuilder& builder) const {
     libscca_file_metrics_t* metric = nullptr;
     if (libscca_file_get_file_metrics_entry(scca_handle_, i, &metric,
                                             nullptr) != 1) {
-      logger->warn("Ошибка чтения метрики {}", i);
+      logger->warn("Ошибка чтения метрики \"{}\"", i);
       continue;
     }
 
@@ -234,7 +242,7 @@ void PrefetchParser::parseMetrics(PrefetchDataBuilder& builder) const {
       std::ranges::replace(normalized_filename, '\\', '/');
       builder.addMetric(FileMetric(normalized_filename, file_ref));
     } catch (const std::exception& e) {
-      logger->error("Ошибка обработки метрики {}: {}", filename, e.what());
+      logger->error("Ошибка обработки метрики \"{}\": {}", filename, e.what());
     }
 
     libscca_file_metrics_free(&metric, nullptr);

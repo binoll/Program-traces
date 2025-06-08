@@ -9,20 +9,19 @@
 #include <vector>
 
 #include "../../../../parsers/registry/parser/parser.hpp"
+#include "../../../../utils/utils.hpp"
 #include "../../os_detection/ios_detection.hpp"
 #include "../data/analysis_data.hpp"
 
-/// @brief Разделяет строку на подстроки по указанному разделителю
-/// @param str Входная строка для разделения
-/// @param delimiter Символ-разделитель
-/// @return Вектор подстрок
-static std::vector<std::string> split(const std::string& str, char delimiter);
-
-/// @brief Удаляет пробельные символы с начала и конца строки
-/// @param str Строка для обработки (модифицируется на месте)
-static void trim(std::string& str);
-
 namespace WindowsDiskAnalysis {
+
+/// @brief Конфигурация параметров для конкретной версии ОС
+struct AutorunConfig {
+  std::string
+      registry_path;  ///< Абсолютный путь к файлу куста реестра на диске
+  std::vector<std::string> registry_locations;  ///< Список ключей реестра
+  std::vector<std::string> filesystem_paths;    ///< Пути в файловой системе
+};
 
 /// @brief Анализатор автозагружаемых элементов Windows
 /// @details Выполняет поиск программ, запускаемых автоматически при загрузке
@@ -73,7 +72,7 @@ class AutorunAnalyzer {
 
   std::unique_ptr<RegistryAnalysis::IRegistryParser>
       parser_;  ///< Парсер для работы с кустами реестра
-  std::map<std::string, IniConfig>
+  std::map<std::string, AutorunConfig>
       configs_;             ///< Конфигурации для различных версий ОС
   std::string os_version_;  ///< Целевая версия ОС для анализа
 };
