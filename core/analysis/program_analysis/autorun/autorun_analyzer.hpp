@@ -9,8 +9,6 @@
 #include <vector>
 
 #include "../../../../parsers/registry/parser/parser.hpp"
-#include "../../../../utils/utils.hpp"
-#include "../../os_detection/ios_detection.hpp"
 #include "../data/analysis_data.hpp"
 
 namespace WindowsDiskAnalysis {

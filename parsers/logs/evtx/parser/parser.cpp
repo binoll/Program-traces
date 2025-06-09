@@ -28,8 +28,6 @@ EvtxParser::EvtxParser() {
 
 EvtxParser::~EvtxParser() {
   const auto logger = GlobalLogger::get();
-  logger->debug("Уничтожение EvtxParser");
-
   CloseLogFile();
   if (evtx_file_) {
     libevtx_file_free(&evtx_file_, nullptr);
@@ -53,7 +51,6 @@ void EvtxParser::OpenLogFile(const std::string& file_path) {
     if (error) {
       char error_buffer[256];
       libevtx_error_sprint(error, error_buffer, sizeof(error_buffer));
-      error_msg += ": "s + error_buffer;
       libevtx_error_free(&error);
     }
     throw FileOpenException(file_path);
@@ -215,7 +212,7 @@ void EvtxParser::ExtractEventDataFromXml(EventData& event_data,
       }
     }
   } catch (const std::regex_error& e) {
-    logger->warn("Ошибка регулярного выражения при разборе XML: {}", e.what());
+    logger->debug("Ошибка регулярного выражения при разборе XML: {}", e.what());
   }
 
   // Извлечение описания, если не установлено из CommandLine
@@ -227,7 +224,7 @@ void EvtxParser::ExtractEventDataFromXml(EventData& event_data,
         event_data.setDescription(match[1].str());
       }
     } catch (const std::regex_error& e) {
-      logger->warn("Ошибка регулярного выражения при разборе Description: {}",
+      logger->debug("Ошибка регулярного выражения при разборе Description: {}",
                    e.what());
     }
   }
@@ -240,7 +237,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::parseEvents(
   try {
     OpenLogFile(file_path);
 
-    logger->info("Начало обработки EVTX файла: {}", file_path);
+    logger->debug("Начало обработки EVTX файла: \"{}\"", file_path);
 
     libevtx_error_t* error = nullptr;
     int record_count = 0;
@@ -259,7 +256,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::parseEvents(
       throw DataReadException(error_msg);
     }
 
-    logger->debug("Найдено {} записей в EVTX файле", record_count);
+    logger->debug("Найдено \"{}\" записей в EVTX файле", record_count);
 
     // Получение всех записей
     for (int i = 0; i < record_count; i++) {
@@ -273,7 +270,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::parseEvents(
       }
     }
 
-    logger->info("Файл успешно обработан. Успешно разобрано {} событий",
+    logger->debug("Файл успешно обработан. Успешно разобрано \"{}\" событие",
                  events.size());
     return events;
   } catch (...) {
@@ -285,7 +282,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::parseEvents(
 std::vector<std::unique_ptr<IEventData>> EvtxParser::getEventsByType(
     const std::string& file_path, uint32_t event_id) {
   const auto logger = GlobalLogger::get();
-  logger->info("Фильтрация событий по ID {} из EVTX файла: {}", event_id,
+  logger->debug("Фильтрация событий по ID \"{}\" из EVTX файла: \"{}\"", event_id,
                file_path);
 
   try {
@@ -308,7 +305,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::getEventsByType(
       throw DataReadException(error_msg);
     }
 
-    logger->debug("Найдено {} записей в EVTX файле", record_count);
+    logger->debug("Найдено \"{}\" записей в EVTX файле", record_count);
 
     // Фильтрация записей по ID события
     for (int i = 0; i < record_count; i++) {
@@ -327,7 +324,7 @@ std::vector<std::unique_ptr<IEventData>> EvtxParser::getEventsByType(
       }
     }
 
-    logger->info("Найдено {} событий с ID {}", filtered_events.size(),
+    logger->debug("Найдено \"{}\" событий с ID \"{}\"", filtered_events.size(),
                  event_id);
     return filtered_events;
   } catch (...) {

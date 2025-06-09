@@ -122,7 +122,7 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& builder) const {
     }
 
     if (filetime == 0) {
-      logger->warn("Пропущена нулевая метка времени");
+      logger->debug("Пропущена нулевая метка времени");
       continue;
     }
 
@@ -131,7 +131,7 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& builder) const {
       builder.addRunTime(unix_time);
       valid_times.push_back(filetime);
     } catch (const InvalidTimestampException& e) {
-      logger->warn("Некорректная метка времени: \"{}\"", e.what());
+      logger->debug("Некорректная метка времени: \"{}\"", e.what());
     }
   }
 
@@ -156,7 +156,7 @@ void PrefetchParser::parseVolumes(PrefetchDataBuilder& builder) const {
     libscca_volume_information_t* vol_info = nullptr;
     if (libscca_file_get_volume_information(scca_handle_, i, &vol_info,
                                             nullptr) != 1) {
-      logger->warn("Ошибка чтения информации о томе \"{}\"", i);
+      logger->debug("Ошибка чтения информации о томе \"{}\"", i);
       continue;
     }
 
@@ -213,7 +213,7 @@ void PrefetchParser::parseMetrics(PrefetchDataBuilder& builder) const {
     libscca_file_metrics_t* metric = nullptr;
     if (libscca_file_get_file_metrics_entry(scca_handle_, i, &metric,
                                             nullptr) != 1) {
-      logger->warn("Ошибка чтения метрики \"{}\"", i);
+      logger->debug("Ошибка чтения метрики \"{}\"", i);
       continue;
     }
 

@@ -4,6 +4,7 @@
 
 #include "../../../../utils/config/config.hpp"
 #include "../../../../utils/logging/logger.hpp"
+#include "../../../../utils/utils.hpp"
 
 namespace WindowsDiskAnalysis {
 

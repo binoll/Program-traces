@@ -35,8 +35,6 @@ EvtParser::EvtParser() {
 
 EvtParser::~EvtParser() {
   const auto logger = GlobalLogger::get();
-  logger->debug("Уничтожение EvtParser");
-
   CloseLogFile();
   if (evt_file_) {
     libevt_file_free(&evt_file_, nullptr);
@@ -54,7 +52,7 @@ void EvtParser::OpenLogFile(const std::string& file_path) {
   libevt_error_t* error = nullptr;
   int access_flags = libevt_get_access_flags_read();
 
-  logger->info("Открытие EVT файла: {}", file_path);
+  logger->debug("Открытие EVT файла: \"{}\"", file_path);
   if (libevt_file_open(evt_file_, file_path.c_str(), access_flags, &error) !=
       1) {
     std::string error_msg = "Не удалось открыть файл: "s + file_path;
@@ -237,7 +235,7 @@ std::unique_ptr<EventData> EvtParser::ParseRecord(libevt_record_t* record) {
 std::vector<std::unique_ptr<IEventData>> EvtParser::parseEvents(
     const std::string& file_path) {
   const auto logger = GlobalLogger::get();
-  logger->info("Разбор событий из EVT файла: {}", file_path);
+  logger->debug("Разбор событий из EVT файла: \"{}\"", file_path);
 
   try {
     OpenLogFile(file_path);
@@ -260,7 +258,7 @@ std::vector<std::unique_ptr<IEventData>> EvtParser::parseEvents(
       throw DataReadException(error_msg);
     }
 
-    logger->debug("Найдено {} записей в EVT файле", record_count);
+    logger->debug("Найдено \"{}\" записей в EVT файле", record_count);
 
     // Получение всех записей
     for (int i = 0; i < record_count; i++) {
@@ -273,7 +271,7 @@ std::vector<std::unique_ptr<IEventData>> EvtParser::parseEvents(
       }
     }
 
-    logger->info("Успешно разобрано {} событий", events.size());
+    logger->debug("Успешно разобрано \"{}\" событий", events.size());
     return events;
   } catch (...) {
     CloseLogFile();
@@ -284,7 +282,7 @@ std::vector<std::unique_ptr<IEventData>> EvtParser::parseEvents(
 std::vector<std::unique_ptr<IEventData>> EvtParser::getEventsByType(
     const std::string& file_path, uint32_t event_id) {
   const auto logger = GlobalLogger::get();
-  logger->info("Фильтрация событий по ID {} из EVT файла: {}", event_id,
+  logger->debug("Фильтрация событий по ID \"{}\" из EVT файла: \"{}\"", event_id,
                file_path);
 
   try {
@@ -308,7 +306,7 @@ std::vector<std::unique_ptr<IEventData>> EvtParser::getEventsByType(
       throw DataReadException(error_msg);
     }
 
-    logger->debug("Найдено {} записей в EVT файле", record_count);
+    logger->debug("Найдено \"{}\" записей в EVT файле", record_count);
 
     // Фильтрация записей по ID события
     for (int i = 0; i < record_count; i++) {
@@ -326,7 +324,7 @@ std::vector<std::unique_ptr<IEventData>> EvtParser::getEventsByType(
       }
     }
 
-    logger->info("Найдено {} событий с ID {}", filtered_events.size(),
+    logger->debug("Найдено \"{}\" событий с ID \"{}\"", filtered_events.size(),
                  event_id);
     return filtered_events;
   } catch (...) {

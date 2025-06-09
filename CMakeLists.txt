@@ -6,24 +6,29 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(
         program_traces
         main.cpp
-        analysis/prefetch/data_model/data.cpp
-        analysis/prefetch/data_model/data_builder.cpp
-        analysis/prefetch/metadata/file_metric.cpp
-        analysis/prefetch/metadata/volume_info.cpp
-        analysis/prefetch/parser/parser.cpp
-        analysis/registry/data_types/key.cpp
-        analysis/registry/data_types/value.cpp
-        analysis/registry/data_model/data.cpp
-        analysis/registry/data_model/data_builder.cpp
-        analysis/registry/data_model/storage/data_storage.cpp
-        analysis/registry/enums/value_type_utils.cpp
-        analysis/registry/parser/parser.cpp
-        analysis/logs/evtx/parser/parser.cpp
-        analysis/logs/evt/parser/parser.cpp
-        analysis/logs/data_model/data.cpp
-        core/os_detection/os_detection.cpp
+        parsers/prefetch/data_model/data.cpp
+        parsers/prefetch/data_model/data_builder.cpp
+        parsers/prefetch/metadata/file_metric.cpp
+        parsers/prefetch/metadata/volume_info.cpp
+        parsers/prefetch/parser/parser.cpp
+        parsers/registry/data_types/key.cpp
+        parsers/registry/data_types/value.cpp
+        parsers/registry/data_model/data.cpp
+        parsers/registry/data_model/data_builder.cpp
+        parsers/registry/data_model/storage/data_storage.cpp
+        parsers/registry/enums/value_type_utils.cpp
+        parsers/registry/parser/parser.cpp
+        parsers/logs/evtx/parser/parser.cpp
+        parsers/logs/evt/parser/parser.cpp
+        parsers/logs/data_model/data.cpp
+        core/analysis/os_detection/os_detection.cpp
         utils/logging/logger.cpp
         utils/config/config.cpp
+        core/analysis/program_analysis/autorun/autorun_analyzer.cpp
+        core/analysis/program_analysis/prefetch/prefetch_analyzer.cpp
+        core/analysis/program_analysis/logs/eventlog_analyzer.cpp
+        core/analysis/program_analysis/windows_disk_analyzer.cpp
+        utils/export/csv_exporter.cpp
 )
 
 find_package(spdlog REQUIRED)

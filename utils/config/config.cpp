@@ -14,7 +14,6 @@ Config::Config(std::string filename, const bool useMultiKey,
       useMultiKey_(useMultiKey),
       useMultiLine_(useMultiLine) {
   const auto logger = GlobalLogger::get();
-  logger->info("Загрузка конфигурации из файла: \"{}\"", filename_);
   reload();
 }
 
