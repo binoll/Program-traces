@@ -1,50 +1,50 @@
 #include <iostream>
+#include <string>
 
-#include "analysis/parsers/registry/parser/parser.hpp"
-#include "utils/logger/logger.hpp"
+#include "core/analysis/program_analysis/windows_disk_analyzer.hpp"
+#include "utils/logging/logger.hpp"
 
 int main(int argc, char* argv[]) {
-  try {
-
-    RegistryAnalysis::RegistryParser analyzer;
-    std::string software_path(argv[1]);
-    software_path += "/Windows/System32/config/SOFTWARE";
-    analyzer.open(software_path);
-
-    const std::string version_key = "Microsoft/Windows NT/CurrentVersion";
-    auto values = analyzer.getAllKeyValues(version_key);
-
-    // Сбор данных
-    std::string product_name_, display_version, current_build;
-    int major_version = 0, minor_version = 0;
-
-    for (const auto& val : values) {
-      if (val.name_ == "ProductName")
-        product_name_ = val.data_;
-      else if (val.name_ == "DisplayVersion")
-        display_version = val.data_;
-      else if (val.name_ == "CurrentBuild")
-        current_build = val.data_;
-      else if (val.name_ == "CurrentMajorVersionNumber")
-        major_version = std::stoi(val.data_);
-      else if (val.name_ == "CurrentMinorVersionNumber")
-        minor_version = std::stoi(val.data_);
-    }
-
-    // Определение версии
-    bool is_windows11 = (major_version >= 10 && minor_version >= 0 &&
-                         std::stoi(current_build) >= 22000);
-
-    std::cout << "Информация о системе:\n"
-              << "  ProductName: " << product_name_ << "\n"
-              << "  DisplayVersion: " << display_version << "\n"
-              << "  CurrentBuild: " << current_build << "\n"
-              << "  Версия ОС: " << (is_windows11 ? "Windows 11" : "Windows 10")
-              << "\n";
-
-  } catch (const std::exception& e) {
-    std::cerr << "Ошибка: " << e.what() << "\n";
+  // Проверка количества аргументов
+  if (argc != 4) {
+    std::cerr << "Использование: " << argv[0]
+              << " <корень_диска> <конфиг> <выходной_файл>\n"
+              << "Пример: " << argv[0]
+              << " /mnt/диск_windows/ /путь/к/config.ini /отчеты/анализ.csv\n";
     return 1;
   }
+
+  const auto logger = GlobalLogger::get();
+
+  try {
+    // Получение аргументов
+    std::string disk_root(argv[1]);
+    const std::string config_path(argv[2]);
+    const std::string output_path(argv[3]);
+
+    // Нормализация пути к диску
+    if (disk_root.back() != '/' && disk_root.back() != '\\') {
+      disk_root += '/';
+    }
+
+    std::cout << "\n=== Запуск анализа диска Windows ===\n"
+              << "\tКорневая директория: " << disk_root << "\n"
+              << "\tКонфигурационный файл: " << config_path << "\n"
+              << "\tВыходной CSV-файл: " << output_path << "\n\n";
+
+    // Создание и запуск анализатора
+    WindowsDiskAnalysis::WindowsDiskAnalyzer analyzer(disk_root, config_path);
+    analyzer.analyze(output_path);
+
+    std::cout << "\n=== Анализ успешно завершен ===\n"
+              << "Результаты сохранены в: " << output_path << "\n";
+  } catch (const std::filesystem::filesystem_error& e) {
+    logger->error("Ошибка файловой системы: {}", e.what());
+    return 2;
+  } catch (const std::exception& e) {
+    logger->error("{}", e.what());
+    return 3;
+  }
+
   return 0;
 }

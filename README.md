@@ -52,7 +52,7 @@ sudo make install
 3. Update the library cache
 
 ```bash
-sudo ldconfig
+sudo ldconfig && cd ..
 ```
 
 4. Checking the installation
@@ -83,13 +83,75 @@ sudo make install
 3. Update the library cache
 
 ```bash
-sudo ldconfig
+sudo ldconfig && cd ..
 ```
 
 4. Checking the installation
 
 ```bash
 sccainfo
+```
+
+### Install libevtx
+
+1. Clone the repository libevtx
+
+```bash
+git clone https://github.com/libyal/libevtx.git
+cd libevtx
+```
+
+2. Build and install the library "libevtx"
+
+```bash
+./synclibs.sh
+./autogen.sh
+./configure
+make
+sudo make install
+```
+
+3. Update the library cache
+
+```bash
+sudo ldconfig && cd ..
+```
+
+4. Checking the installation
+
+```bash
+evtxexport --version
+```
+
+### Install libevt
+
+1. Clone the repository libevt
+
+```bash
+git clone https://github.com/libyal/libevt
+cd libevtx
+```
+
+2. Build and install the library "libevt"
+
+```bash
+./synclibs.sh
+./autogen.sh
+./configure
+make
+sudo make install
+```
+
+3. Update the library cache
+
+```bash
+sudo ldconfig && cd ..
+```
+
+4. Checking the installation
+
+```bash
+evtexport --version
 ```
 
 ## Build
