@@ -24,6 +24,7 @@ class CSVExporter {
   /// @param[in] autorun_entries Список записей автозагрузки
   /// @param[in] process_data Данные о процессах (путь, хэш, время запусков)
   /// @param[in] network_connections Список сетевых подключений
+  /// @param amcache_entries
   /// @throw CsvExportException В случае ошибок экспорта
   /// @throw FileOpenException Если не удалось открыть файл для записи
   /// @throw DataFormatException При обнаружении некорректных данных
@@ -45,7 +46,8 @@ class CSVExporter {
       const std::string& output_path,
       const std::vector<AutorunEntry>& autorun_entries,
       const std::map<std::string, ProcessInfo>& process_data,
-      const std::vector<NetworkConnection>& network_connections);
+      const std::vector<NetworkConnection>& network_connections,
+      const std::vector<AmcacheEntry>& amcache_entries);
 };
 
 }

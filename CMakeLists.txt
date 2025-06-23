@@ -25,6 +25,7 @@ add_executable(
         utils/logging/logger.cpp
         utils/config/config.cpp
         core/analysis/program_analysis/autorun/autorun_analyzer.cpp
+        core/analysis/program_analysis/amcache/amcache_analyzer.cpp
         core/analysis/program_analysis/prefetch/prefetch_analyzer.cpp
         core/analysis/program_analysis/logs/eventlog_analyzer.cpp
         core/analysis/program_analysis/windows_disk_analyzer.cpp

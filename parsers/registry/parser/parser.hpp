@@ -46,6 +46,12 @@ class RegistryParser : public IRegistryParser {
       const std::string& registry_file_path,
       const std::string& registry_value_path) override;
 
+  /// @copydoc RegistryParser::listSubkeys
+  /// @throw RegistryException В случае ошибок доступа или парсинга
+  std::vector<std::string> listSubkeys(
+    const std::string& registry_file_path,
+    const std::string& registry_key_path) override;
+
   /// @}
 
  private:

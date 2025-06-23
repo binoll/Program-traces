@@ -16,7 +16,7 @@ PrefetchParser::PrefetchParser() : scca_handle_(nullptr) {
     throw InitLibError("libscca");
   }
 
-  logger->info("Парсер успешно инициализирован");
+  logger->debug("Парсер успешно инициализирован");
 }
 
 PrefetchParser::~PrefetchParser() noexcept {
@@ -29,7 +29,7 @@ std::unique_ptr<IPrefetchData> PrefetchParser::parse(
     const std::string& path) const {
   const auto logger = GlobalLogger::get();
 
-  logger->info("Начало обработки файла: \"{}\"", path);
+  logger->debug("Начало обработки файла: \"{}\"", path);
 
   if (libscca_file_open(scca_handle_, path.c_str(), LIBSCCA_ACCESS_FLAG_READ,
                         nullptr) != 1) {
@@ -58,7 +58,7 @@ std::unique_ptr<IPrefetchData> PrefetchParser::parse(
     logger->error("Ошибка при обработке файла: \"{}\"", path);
   }
 
-  logger->info("Файл успешно обработан");
+  logger->debug("Файл успешно обработан");
   libscca_file_close(scca_handle_, nullptr);
   return builder.build();
 }

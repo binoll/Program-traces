@@ -27,7 +27,7 @@ doxygen docs/Doxyfile
 ### Installing common dependencies
 
 ```bash
-sudo apt update && sudo apt install cmake libspdlog-dev git autoconf automake libtool pkg-config gcc g++ make libfuse-dev -y
+sudo apt update && sudo apt install autopoint cmake libspdlog-dev git autoconf automake libtool pkg-config gcc g++ make libfuse-dev -y
 ```
 
 ### Install libregf
@@ -129,7 +129,7 @@ evtxexport --version
 
 ```bash
 git clone https://github.com/libyal/libevt
-cd libevtx
+cd libevt
 ```
 
 2. Build and install the library "libevt"

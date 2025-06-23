@@ -44,6 +44,14 @@ class IRegistryParser {
       const std::string& registry_file_path,
       const std::string& registry_value_path) = 0;
 
+  /// @brief Получить список подразделов в указанном ключе
+  /// @param[in] registry_file_path Путь к файлу реестра
+  /// @param[in] registry_key_path Путь к разделу реестра
+  /// @return Вектор имен подразделов
+  virtual std::vector<std::string> listSubkeys(
+      const std::string& registry_file_path,
+      const std::string& registry_key_path) = 0;
+
   /// @}
 };
 

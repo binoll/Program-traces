@@ -39,7 +39,7 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
   if (libregf_key_get_number_of_values(key_handle.getPtr(), &value_count,
                                        nullptr) != 1) {
     logger->debug("Не удалось получить количество значений для ключа: \"{}\"",
-                 registry_key_path);
+                  registry_key_path);
     return results;
   }
 
@@ -54,7 +54,7 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
                                        value_handle.getAddressOfPtr(),
                                        nullptr) != 1) {
       logger->debug("Не удалось получить значение по индексу: \"{}\"",
-                   value_index);
+                    value_index);
       continue;  // Пропускаем недоступные значения
     }
 
@@ -140,7 +140,7 @@ void RegistryParser::closeRegistryFile() {
   if (regf_file_handle_) {
     libregf_file_free(&regf_file_handle_, nullptr);
     regf_file_handle_ = nullptr;
-    logger->info("Файл реестра закрыт");
+    logger->debug("Файл реестра закрыт");
   }
 }
 
@@ -272,6 +272,77 @@ std::unique_ptr<IRegistryData> RegistryParser::getSpecificValue(
   return createRegistryDataObject(value_handle.getPtr(), registry_value_path);
 }
 
+std::vector<std::string> RegistryParser::listSubkeys(
+    const std::string& registry_file_path,
+    const std::string& registry_key_path) {
+  const auto logger = GlobalLogger::get();
+  logger->debug("Получение подразделов для ключа: \"{}\"", registry_key_path);
+
+  // Открываем файл реестра
+  openRegistryFile(registry_file_path);
+
+  // Получаем handle родительского ключа
+  KeyHandle parent_key = findRegistryKey(registry_key_path);
+
+  std::vector<std::string> subkeys;
+  int subkey_count = 0;
+
+  // Получаем количество подразделов
+  if (libregf_key_get_number_of_sub_keys(parent_key.getPtr(), &subkey_count, nullptr) != 1) {
+    logger->debug("Не удалось получить количество подразделов для ключа: \"{}\"", registry_key_path);
+    return subkeys;
+  }
+
+  logger->debug("Найдено подразделов: \"{}\"", subkey_count);
+
+  // Перебираем все подразделы
+  for (int i = 0; i < subkey_count; i++) {
+    KeyHandle subkey;
+
+    // Используем НЕ устаревший метод для получения подраздела по индексу
+    if (libregf_key_get_sub_key_by_index(
+            parent_key.getPtr(),
+            i,
+            subkey.getAddressOfPtr(),
+            nullptr) != 1) {
+      logger->debug("Не удалось получить подраздел с индексом: \"{}\"", i);
+      continue;
+    }
+
+    // Получаем размер имени подраздела
+    size_t name_size = 0;
+    if (libregf_key_get_utf8_name_size(subkey.getPtr(), &name_size, nullptr) != 1) {
+      logger->debug("Не удалось получить размер имени подраздела");
+      continue;
+    }
+
+    // Пропускаем пустые имена
+    if (name_size == 0) {
+      continue;
+    }
+
+    // Читаем имя подраздела
+    std::vector<char> name_buffer(name_size);
+    if (libregf_key_get_utf8_name(
+            subkey.getPtr(),
+            reinterpret_cast<uint8_t*>(name_buffer.data()),
+            name_size,
+            nullptr) != 1) {
+      logger->debug("Не удалось прочитать имя подраздела");
+      continue;
+    }
+
+    // Определяем фактическую длину строки
+    const size_t actual_length = strnlen(name_buffer.data(), name_size);
+    subkeys.emplace_back(name_buffer.data(), actual_length);
+    logger->debug("Найден подраздел: \"{}\"", subkeys.back());
+  }
+
+  logger->debug("Возвращено \"{}\" подразделов для ключа: \"{}\"",
+                subkeys.size(), registry_key_path);
+  return subkeys;
+}
+
 std::unique_ptr<IRegistryData> RegistryParser::createRegistryDataObject(
     libregf_value_t* value_handle, const std::string& value_path) {
   const auto logger = GlobalLogger::get();
@@ -316,7 +387,7 @@ RegistryValueType RegistryParser::convertValueType(uint32_t libregf_type) {
     case LIBREGF_VALUE_TYPE_UNDEFINED:
     default:
       logger->debug("Неизвестный или неподдерживаемый тип реестра: \"{}\"",
-                   libregf_type);
+                    libregf_type);
       return RegistryValueType::REG_NONE;
   }
 }
@@ -400,7 +471,8 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
         memcpy(&dword_value, data_buffer.data(), sizeof(dword_value));
         builder.setDword(dword_value);
       } else {
-        logger->debug("Некорректный размер данных для DWORD: \"{}\"", data_size);
+        logger->debug("Некорректный размер данных для DWORD: \"{}\"",
+                      data_size);
       }
       break;
 
@@ -414,7 +486,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
         builder.setDwordBigEndian(dword_value);
       } else {
         logger->debug("Некорректный размер данных для big-endian DWORD: \"{}\"",
-                     data_size);
+                      data_size);
       }
       break;
 
@@ -424,7 +496,8 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
         memcpy(&qword_value, data_buffer.data(), sizeof(qword_value));
         builder.setQword(qword_value);
       } else {
-        logger->debug("Некорректный размер данных для QWORD: \"{}\"", data_size);
+        logger->debug("Некорректный размер данных для QWORD: \"{}\"",
+                      data_size);
       }
       break;
 
@@ -451,7 +524,7 @@ void RegistryParser::processValueData(libregf_value_t* value_handle,
 
     default:
       logger->debug("Неподдерживаемый тип значения для обработки: \"{}\"",
-                   static_cast<uint32_t>(value_type));
+                    static_cast<uint32_t>(value_type));
       break;
   }
 }

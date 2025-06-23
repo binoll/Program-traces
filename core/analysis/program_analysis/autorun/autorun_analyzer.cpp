@@ -20,16 +20,17 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
   Config config(ini_path, false, false);
   const auto logger = GlobalLogger::get();
 
-  // Получаем список поддерживаемых версий
+  // Получаем список версий
   std::string versions_str = config.getString("General", "Versions", "");
 
+  // Обрабатываем каждую версию
   for (auto versions = split(versions_str, ','); auto& version : versions) {
     trim(version);
     if (version.empty()) continue;
 
     AutorunConfig cfg;
 
-    // Загрузка пути к файлу куста реестра
+    // Загрузка пути к кусту реестра
     std::string reg_path = config.getString(version, "RegistryPath", "");
     trim(reg_path);
     if (!reg_path.empty()) {
@@ -37,7 +38,7 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
       cfg.registry_path = reg_path;
     }
 
-    // Загрузка путей в реестре
+    // Загрузка ключей реестра
     std::string reg_keys = config.getString(version, "RegistryKeys", "");
     auto reg_key_list = split(reg_keys, ',');
     for (auto& key : reg_key_list) {
@@ -47,7 +48,7 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
       cfg.registry_locations.push_back(key);
     }
 
-    // Загрузка путей в файловой системе
+    // Загрузка путей файловой системы
     std::string fs_paths = config.getString(version, "FilesystemPaths", "");
     auto fs_path_list = split(fs_paths, ',');
     for (auto& path : fs_path_list) {
@@ -57,10 +58,12 @@ void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
       }
     }
 
+    // Сохраняем конфигурацию
     configs_[version] = cfg;
+
+    // Логируем результат
     logger->debug(
-        "Загружена конфигурация для \"{}\": куст реестра \"{}\", \"{}\" "
-        "ключей, \"{}\" "
+        "Загружена конфигурация для \"{}\": куст реестра \"{}\", {} ключей, {} "
         "путей ФС",
         version, cfg.registry_path.empty() ? "по умолчанию" : cfg.registry_path,
         cfg.registry_locations.size(), cfg.filesystem_paths.size());

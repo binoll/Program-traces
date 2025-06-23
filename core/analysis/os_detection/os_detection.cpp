@@ -7,6 +7,7 @@
 
 #include "../../../core/exceptions/os_detection_exception.hpp"
 #include "../../../core/exceptions/registry_exception.hpp"
+#include "../../../utils/utils.hpp"
 #include "os_info.hpp"
 
 namespace WindowsVersion {
@@ -15,7 +16,7 @@ OSDetection::OSDetection(
     std::unique_ptr<RegistryAnalysis::IRegistryParser> parser, Config&& config,
     std::string device_root_path)
     : parser_(std::move(parser)),
-      config_(std::move(config)),
+      config_(config),
       device_root_path_(std::move(device_root_path)) {
   loadConfiguration();
 }
