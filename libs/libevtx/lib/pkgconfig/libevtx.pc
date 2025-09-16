@@ -1,0 +1,12 @@
+prefix=/Users/binoll/Desktop/libevtx-main/build
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libevtx
+Description: Library to access the Windows XML Event Log (EVTX) format
+Version: 20240927
+Libs: -L${libdir} -levtx
+Libs.private:                  
+Cflags: -I${includedir}
+

@@ -1,0 +1,12 @@
+prefix=/Users/binoll/Desktop/libevt-main/build
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libevt
+Description: Library to access the Windows Event Log (EVT) format
+Version: 20240628
+Libs: -L${libdir} -levt
+Libs.private:                
+Cflags: -I${includedir}
+

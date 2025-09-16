@@ -1,0 +1,12 @@
+prefix=/Users/binoll/Desktop/libscca-main/build
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libscca
+Description: Library to access the Windows Prefetch File (PF) format
+Version: 20250915
+Libs: -L${libdir} -lscca
+Libs.private:                
+Cflags: -I${includedir}
+
