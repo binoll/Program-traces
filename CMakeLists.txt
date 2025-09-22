@@ -3,6 +3,9 @@ project(program_traces)
 
 set(CMAKE_CXX_STANDARD 23)
 
+# Базовый путь к библиотекам
+set(LIBS_BASE_PATH ${CMAKE_SOURCE_DIR}/libs/macos)
+
 add_executable(
         program_traces
         main.cpp
@@ -32,37 +35,30 @@ add_executable(
         utils/export/csv_exporter.cpp
 )
 
-find_package(spdlog REQUIRED)
-find_library(REGF_LIBRARY NAMES regf libregf)
-find_library(SCCA_LIBRARY NAMES scca libscca)
-find_library(EVTX_LIBRARY NAMES evtx libevtx)
-find_library(EVT_LIBRARY NAMES evt libevt)
-
-if (NOT REGF_LIBRARY)
-    message(FATAL_ERROR "Библиотека libregf не найдена. Установите ее или укажите путь вручную.")
-endif ()
-
-if (NOT SCCA_LIBRARY)
-    message(FATAL_ERROR "Библиотека libscca не найдена. Установите ее или укажите путь вручную.")
-endif ()
-
-if (NOT EVTX_LIBRARY)
-    message(FATAL_ERROR "Библиотека libevtx не найдена. Установите ее или укажите путь вручную.")
-endif ()
-
-if (NOT EVT_LIBRARY)
-    message(FATAL_ERROR "Библиотека libevt не найдена. Установите ее или укажите путь вручную.")
-endif ()
-
-message(STATUS "Найдена библиотека libregf: ${REGF_LIBRARY}")
-message(STATUS "Найдена библиотека libscca: ${SCCA_LIBRARY}")
-message(STATUS "Найдена библиотека libscca: ${EVTX_LIBRARY}")
-message(STATUS "Найдена библиотека libregf: ${EVT_LIBRARY}")
-
-target_link_libraries(program_traces
-        spdlog::spdlog
-        ${REGF_LIBRARY}
-        ${SCCA_LIBRARY}
-        ${EVTX_LIBRARY}
-        ${EVT_LIBRARY}
+# Подключение заголовков
+target_include_directories(program_traces PRIVATE
+        ${LIBS_BASE_PATH}/libregf/include
+        ${LIBS_BASE_PATH}/libscca/include
+        ${LIBS_BASE_PATH}/libevtx/include
+        ${LIBS_BASE_PATH}/libevt/include
+        ${LIBS_BASE_PATH}/libspdlog/include
+        ${LIBS_BASE_PATH}/libfmt/include
+        ${CMAKE_SOURCE_DIR}
 )
+
+# Линковка библиотек
+target_link_libraries(program_traces
+        ${LIBS_BASE_PATH}/libregf/libregf.a
+        ${LIBS_BASE_PATH}/libscca/libscca.a
+        ${LIBS_BASE_PATH}/libevtx/libevtx.a
+        ${LIBS_BASE_PATH}/libevt/libevt.a
+        ${LIBS_BASE_PATH}/libspdlog/libspdlog.a
+        ${LIBS_BASE_PATH}/libfmt/libfmt.a
+)
+
+# Для macOS
+if (APPLE)
+    find_library(CF_LIB CoreFoundation)
+    find_library(IOKIT_LIB IOKit)
+    target_link_libraries(program_traces ${CF_LIB} ${IOKIT_LIB})
+endif ()
