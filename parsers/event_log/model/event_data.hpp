@@ -20,24 +20,21 @@ class EventDataBuilder;
 
 /// @class EventData
 /// @brief Неизменяемый контейнер данных события Windows
-/// @details Объект создается через EventDataBuilder и не может быть изменен
-/// после создания. Гарантирует целостность данных и потокобезопасность для
-/// чтения
 class EventData {
  public:
-  /// @brief Конструктор копирования
+  /// @brief Запрет копирования
   EventData(const EventData&) = delete;
 
-  /// @brief Оператор присваивания копированием
+  /// @brief Запрет присваивания копированием
   EventData& operator=(const EventData&) = delete;
 
-  /// @brief Конструктор перемещения
+  /// @brief Разрешение перемещения
   EventData(EventData&&) = default;
 
-  /// @brief Оператор присваивания перемещением
+  /// @brief Разрешение присваивания перемещением
   EventData& operator=(EventData&&) = default;
 
-  /// @brief Деструктор по умолчанию
+  /// @brief Виртуальный деструктор для корректного наследования
   ~EventData() = default;
 
   /// @brief Возвращает числовой идентификатор события
@@ -90,13 +87,14 @@ class EventData {
       const noexcept;
 
   /// @brief Ищет дополнительное поле данных по ключу
-  /// @param key Ключ для поиска в дополнительных данных
+  /// @param[in] key Ключ для поиска в дополнительных данных
   /// @return Optional с значением поля или std::nullopt если поле не найдено
   [[nodiscard]] std::optional<std::string_view> get_data_field(
       std::string_view key) const;
 
   /// @brief Преобразует Windows FILETIME в стандартную временную точку
   /// @return Временная точка std::chrono::system_clock
+  /// @note Возвращает нулевую временную точку при некорректном timestamp
   [[nodiscard]] std::chrono::system_clock::time_point system_timepoint()
       const noexcept;
 
@@ -113,24 +111,24 @@ class EventData {
   [[nodiscard]] bool is_info() const noexcept;
 
   /// @brief Создает построитель для нового события
-  /// @return Объект EventDataBuilder для пошагового конструирования
+  /// @return Объект EventDataBuilder для пошагового конструирования события
   [[nodiscard]] static EventDataBuilder builder() noexcept;
 
  private:
-  friend class EventDataBuilder;
+  friend class EventDataBuilder;  ///< Дружественный доступ для построителя
 
   /// @brief Приватный конструктор, доступный только для EventDataBuilder
-  /// @param event_id Числовой идентификатор события
-  /// @param timestamp Временная метка в формате Windows FILETIME
-  /// @param level Уровень важности события
-  /// @param provider Имя провайдера (источника) события
-  /// @param computer Имя компьютера, где произошло событие
-  /// @param channel Канал журнала событий
-  /// @param description Текстовое описание события
-  /// @param xml XML-представление события
-  /// @param user_sid SID пользователя
-  /// @param binary_data Бинарные данные события
-  /// @param data Дополнительные параметры события
+  /// @param[in] event_id Числовой идентификатор события
+  /// @param[in] timestamp Временная метка в формате Windows FILETIME
+  /// @param[in] level Уровень важности события
+  /// @param[in] provider Имя провайдера (источника) события
+  /// @param[in] computer Имя компьютера, где произошло событие
+  /// @param[in] channel Канал журнала событий
+  /// @param[in] description Текстовое описание события
+  /// @param[in] xml XML-представление события
+  /// @param[in] user_sid SID пользователя
+  /// @param[in] binary_data Бинарные данные события
+  /// @param[in] data Дополнительные параметры события
   EventData(uint32_t event_id, uint64_t timestamp, EventLevel level,
             std::string provider, std::string computer, std::string channel,
             std::string description, std::string xml, std::string user_sid,
