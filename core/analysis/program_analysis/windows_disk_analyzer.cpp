@@ -6,12 +6,14 @@
 #include "../../../parsers/logs/evt/parser/parser.hpp"
 #include "../../../parsers/logs/evtx/parser/parser.hpp"
 #include "../../../parsers/registry/parser/parser.hpp"
+#include "../../../utils/export/csv_exporter.hpp"
+#include "../../../utils/logging/logger.hpp"
 #include "../os_detection/os_detection.hpp"
 
 namespace fs = std::filesystem;
 using namespace WindowsDiskAnalysis;
 
-WindowsDiskAnalyzer::WindowsDiskAnalyzer(std::string  disk_root,
+WindowsDiskAnalyzer::WindowsDiskAnalyzer(std::string disk_root,
                                          const std::string& config_path)
     : disk_root_(std::move(disk_root)), config_path_(config_path) {
   const auto logger = GlobalLogger::get();
@@ -63,11 +65,12 @@ void WindowsDiskAnalyzer::ensureDirectoryExists(const std::string& path) {
   }
 }
 
-void WindowsDiskAnalyzer::analyze(const std::string& output_path) {
+void WindowsDiskAnalyzer::analyze(const std::string& output_path,
+                                  std::unique_ptr<IExporter> exporter) {
   // 1. Сбор данных об автозагрузке
   autorun_entries_ = autorun_analyzer_->collect(disk_root_);
 
-  // 2. Сбор данных из Amcache.hve (добавленный вызов)
+  // 2. Сбор данных из Amcache.hve
   amcache_entries_ = amcache_analyzer_->collect(disk_root_);
 
   // 3. Сбор данных из Prefetch
@@ -79,9 +82,13 @@ void WindowsDiskAnalyzer::analyze(const std::string& output_path) {
   // 4. Анализ журналов событий
   eventlog_analyzer_->collect(disk_root_, process_data_, network_connections_);
 
-  // 5. Экспорт результатов (обновленный вызов)
+  // 5. Экспорт результатов
   ensureDirectoryExists(output_path);
-  CSVExporter::exportToCSV(output_path, autorun_entries_, process_data_,
-                           network_connections_,
-                           amcache_entries_);  // Добавленный параметр
+
+  if (!exporter) {
+    exporter = std::make_unique<CSVExporter>();
+  }
+
+  exporter->exportData(output_path, autorun_entries_, process_data_,
+                       network_connections_, amcache_entries_);
 }

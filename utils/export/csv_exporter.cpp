@@ -94,6 +94,15 @@ std::string accessFlagsToString(uint32_t flags) {
 
 namespace WindowsDiskAnalysis {
 
+void CSVExporter::exportData(
+      const std::string& output_path,
+      const std::vector<AutorunEntry>& autorun_entries,
+      const std::map<std::string, ProcessInfo>& process_data,
+      const std::vector<NetworkConnection>& network_connections,
+      const std::vector<AmcacheEntry>& amcache_entries) {
+    exportToCSV(output_path, autorun_entries, process_data, network_connections, amcache_entries);
+}
+
 void CSVExporter::exportToCSV(
     const std::string& output_path,
     const std::vector<AutorunEntry>& autorun_entries,
