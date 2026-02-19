@@ -34,7 +34,7 @@ uint64_t TimeConverter::systemTimeToFiletime(
       std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
 
   // Convert ns to 100-ns intervals
-  uint64_t intervals = ns / 100;
+  uint64_t intervals = static_cast<uint64_t>(ns) / 100;
   return intervals + FILETIME_EPOCH_DIFFERENCE;
 }
 

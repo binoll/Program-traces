@@ -44,7 +44,7 @@ void EventLogAnalyzer::loadConfigurations(const std::string& ini_path) {
     trim(id_str);
     if (!id_str.empty()) {
       try {
-        config_.process_event_ids.push_back(std::stoul(id_str));
+        config_.process_event_ids.push_back(static_cast<uint32_t>(std::stoul(id_str)));
       } catch (...) {
         logger->debug("Некорректный ID процесса: \"{}\"", id_str);
       }
@@ -58,7 +58,7 @@ void EventLogAnalyzer::loadConfigurations(const std::string& ini_path) {
     trim(id_str);
     if (!id_str.empty()) {
       try {
-        config_.network_event_ids.push_back(std::stoul(id_str));
+        config_.network_event_ids.push_back(static_cast<uint32_t>(std::stoul(id_str)));
       } catch (...) {
         logger->debug("Некорректный ID сети: \"{}\"", id_str);
       }
@@ -89,8 +89,8 @@ EventLogAnalysis::IEventLogParser* EventLogAnalyzer::getParserForFile(
 
 void EventLogAnalyzer::collect(
     const std::string& disk_root,
-    std::map<std::string, ProcessInfo>& process_data,
-    std::vector<NetworkConnection>& network_connections) {
+    std::map<std::string, ProcessInfo>& /*process_data*/,
+    std::vector<NetworkConnection>& /*network_connections*/) {
   const auto logger = GlobalLogger::get();
 
   for (const auto& log_path : config_.log_paths) {

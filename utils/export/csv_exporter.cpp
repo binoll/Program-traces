@@ -77,20 +77,6 @@ std::string volumeTypeToString(uint32_t type) {
   }
 }
 
-std::string accessFlagsToString(uint32_t flags) {
-  std::string result;
-  if (flags & static_cast<uint32_t>(FileMetricAccess::READ)) result += "READ,";
-  if (flags & static_cast<uint32_t>(FileMetricAccess::WRITE))
-    result += "WRITE,";
-  if (flags & static_cast<uint32_t>(FileMetricAccess::EXECUTE))
-    result += "EXECUTE,";
-  if (flags & static_cast<uint32_t>(FileMetricAccess::DELETE))
-    result += "DELETE,";
-
-  if (!result.empty()) result.pop_back();
-  return result;
-}
-
 }  // namespace
 
 namespace WindowsDiskAnalysis {

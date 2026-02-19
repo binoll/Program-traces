@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "../../../utils/logging/logger.hpp"
+#include "../data_model/prefetch_versions.hpp"
 
 namespace PrefetchAnalysis {
 
@@ -106,12 +107,8 @@ void PrefetchParser::parseBasicInfo(PrefetchDataBuilder& builder) const {
       1) {
     throw DataReadException("ошибка чтения версии формата");
   }
-  if (toVersionEnum(format_version) == PrefetchFormatVersion::UNKNOWN) {
-    throw DataReadException("парсер не поддерживает версии " +
-                            std::to_string(format_version) +
-                            " Prefetch-файлов");
-  }
-  builder.setFormatVersion(format_version);
+
+  builder.setFormatVersion(static_cast<uint8_t>(format_version));
 }
 
 void PrefetchParser::parseRunTimes(PrefetchDataBuilder& builder) const {
@@ -142,7 +139,7 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& builder) const {
 
     try {
       time_t unix_time = convertFiletime(filetime);
-      builder.addRunTime(unix_time);
+      builder.addRunTime(static_cast<uint64_t>(unix_time));
       valid_times.push_back(filetime);
     } catch (const InvalidTimestampException& e) {
       logger->debug("Некорректная метка времени: \"{}\"", e.what());
@@ -150,8 +147,8 @@ void PrefetchParser::parseRunTimes(PrefetchDataBuilder& builder) const {
   }
 
   if (!valid_times.empty()) {
-    const uint64_t last_run = *std::ranges::max_element(valid_times);
-    builder.setLastRunTime(convertFiletime(last_run));
+    const uint64_t last_run = *std::max_element(valid_times.begin(), valid_times.end());
+    builder.setLastRunTime(static_cast<uint64_t>(convertFiletime(last_run)));
   }
 }
 
@@ -190,7 +187,7 @@ void PrefetchParser::parseVolumes(PrefetchDataBuilder& builder) const {
     }
 
     std::string normalized_path(device_path);
-    std::ranges::replace(normalized_path, '\\', '/');
+    std::replace(normalized_path.begin(), normalized_path.end(), '\\', '/');
 
     uint32_t serial = 0;
     uint64_t creation_time = 0;
@@ -257,7 +254,7 @@ void PrefetchParser::parseMetrics(PrefetchDataBuilder& builder) const {
 
     try {
       std::string normalized_filename(filename);
-      std::ranges::replace(normalized_filename, '\\', '/');
+      std::replace(normalized_filename.begin(), normalized_filename.end(), '\\', '/');
       builder.addMetric(FileMetric(normalized_filename, file_ref));
     } catch (const std::exception& e) {
       logger->error("Ошибка обработки метрики \"{}\": {}", filename, e.what());

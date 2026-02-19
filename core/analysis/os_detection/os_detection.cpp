@@ -97,7 +97,7 @@ void OSDetection::loadConfiguration() {
     auto values = config_.getAllValues(section);
     for (const auto& [build_str, name] : values) {
       try {
-        target_map[std::stoul(build_str)] = name;
+        target_map[static_cast<uint32_t>(std::stoul(build_str))] = name;
       } catch (...) {
         logger->warn("Некорректный номер сборки в конфигурации: \"{}\"",
                      build_str);
@@ -130,7 +130,7 @@ void OSDetection::determineFullOSName(OSInfo& info) const {
   uint32_t build_num = 0;
   try {
     if (!info.current_build.empty()) {
-      build_num = std::stoul(info.current_build);
+      build_num = static_cast<uint32_t>(std::stoul(info.current_build));
     }
   } catch (...) {
     // Игнорируем ошибки парсинга номера сборки
