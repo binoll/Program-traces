@@ -12,6 +12,7 @@
 #include "autorun/autorun_analyzer.hpp"
 #include "logs/eventlog_analyzer.hpp"
 #include "prefetch/prefetch_analyzer.hpp"
+#include "data/analysis_data.hpp"
 
 namespace WindowsDiskAnalysis {
 
@@ -55,14 +56,6 @@ class WindowsDiskAnalyzer {
   std::unique_ptr<EventLogAnalyzer>
       eventlog_analyzer_;  ///< Анализатор журналов событий
   std::unique_ptr<AmcacheAnalyzer> amcache_analyzer_;  ///< Анализатор Amcache
-
-  std::vector<AutorunEntry>
-      autorun_entries_;  ///< Результаты анализа автозагрузки
-  std::map<std::string, ProcessInfo>
-      process_data_;  ///< Результаты анализа процессов
-  std::vector<NetworkConnection>
-      network_connections_;  ///< Результаты анализа сети
-  std::vector<AmcacheEntry> amcache_entries_;  ///< Результаты анализа Amcache
 };
 
 }

@@ -32,8 +32,7 @@ class AmcacheAnalyzer {
   std::unique_ptr<RegistryAnalysis::IRegistryParser> parser_;
   std::string os_version_;
   std::string ini_path_;
-  std::string amcache_path_;
-  std::vector<std::string> amcache_keys_;
+  AmcacheConfig config_;
 };
 
 }

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <utility>
 
 #include "../../../../utils/config/config.hpp"
 #include "../../../../utils/logging/logger.hpp"
@@ -21,24 +22,24 @@ AmcacheAnalyzer::AmcacheAnalyzer(
 }
 
 void AmcacheAnalyzer::loadConfiguration() {
-  Config config(ini_path_, false, false);
+  Config config(ini_path_);
   auto logger = GlobalLogger::get();
 
-  amcache_path_ = config.getString(os_version_, "AmcachePath", "");
-  trim(amcache_path_);
-  std::ranges::replace(amcache_path_, '\\', '/');
+  config_.amcache_path = config.getString(os_version_, "AmcachePath", "");
+  trim(config_.amcache_path);
+  std::replace(config_.amcache_path.begin(), config_.amcache_path.end(), '\\', '/');
 
   std::string keys_str = config.getString(os_version_, "AmcacheKeys", "");
   auto keys = split(keys_str, ',');
   for (auto& key : keys) {
     trim(key);
     if (!key.empty()) {
-      amcache_keys_.push_back(key);
+      config_.amcache_keys.push_back(key);
     }
   }
 
   logger->debug("Конфигурация Amcache для {}: путь={}, ключи={}", os_version_,
-                amcache_path_, keys_str);
+                config_.amcache_path, keys_str);
 }
 
 std::vector<AmcacheEntry> AmcacheAnalyzer::collect(
@@ -46,12 +47,12 @@ std::vector<AmcacheEntry> AmcacheAnalyzer::collect(
   std::vector<AmcacheEntry> results;
   auto logger = GlobalLogger::get();
 
-  if (amcache_path_.empty() || amcache_keys_.empty()) {
+  if (config_.amcache_path.empty() || config_.amcache_keys.empty()) {
     logger->warn("Анализ Amcache пропущен: не настроен путь или ключи");
     return results;
   }
 
-  const std::string full_path = disk_root + amcache_path_;
+  const std::string full_path = disk_root + config_.amcache_path;
 
   if (!fs::exists(full_path)) {
     logger->warn("Файл Amcache не найден: {}", full_path);
@@ -61,7 +62,7 @@ std::vector<AmcacheEntry> AmcacheAnalyzer::collect(
   try {
     logger->debug("Анализ куста Amcache: {}", full_path);
 
-    for (const auto& key : amcache_keys_) {
+    for (const auto& key : config_.amcache_keys) {
       try {
         auto subkeys = parser_->listSubkeys(full_path, key);
         logger->debug("Найдено {} подразделов в {}", subkeys.size(), key);

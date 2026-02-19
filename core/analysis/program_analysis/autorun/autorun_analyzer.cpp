@@ -1,6 +1,7 @@
 #include "autorun_analyzer.hpp"
 
 #include <utility>
+#include <algorithm>
 
 #include "../../../../utils/config/config.hpp"
 #include "../../../../utils/logging/logger.hpp"
@@ -10,77 +11,64 @@ namespace WindowsDiskAnalysis {
 
 AutorunAnalyzer::AutorunAnalyzer(
     std::unique_ptr<RegistryAnalysis::IRegistryParser> parser,
-    std::string os_version, const std::string& ini_path)
-    : parser_(std::move(parser)), os_version_(std::move(os_version)) {
-  trim(os_version_);
-  loadConfigurations(ini_path);
-}
+    AutorunConfig config)
+    : parser_(std::move(parser)), config_(std::move(config)) {}
 
-void AutorunAnalyzer::loadConfigurations(const std::string& ini_path) {
-  Config config(ini_path, false, false);
+AutorunConfig AutorunAnalyzer::createConfig(const std::string& ini_path,
+                                            const std::string& os_version) {
+  Config config(ini_path);
   const auto logger = GlobalLogger::get();
+  AutorunConfig cfg;
 
-  // Получаем список версий
-  std::string versions_str = config.getString("General", "Versions", "");
+  std::string version = os_version;
+  trim(version);
 
-  // Обрабатываем каждую версию
-  for (auto versions = split(versions_str, ','); auto& version : versions) {
-    trim(version);
-    if (version.empty()) continue;
-
-    AutorunConfig cfg;
-
-    // Загрузка пути к кусту реестра
-    std::string reg_path = config.getString(version, "RegistryPath", "");
-    trim(reg_path);
-    if (!reg_path.empty()) {
-      std::ranges::replace(reg_path, '\\', '/');
-      cfg.registry_path = reg_path;
-    }
-
-    // Загрузка ключей реестра
-    std::string reg_keys = config.getString(version, "RegistryKeys", "");
-    auto reg_key_list = split(reg_keys, ',');
-    for (auto& key : reg_key_list) {
-      trim(key);
-      if (key.empty()) continue;
-      std::ranges::replace(key, '\\', '/');
-      cfg.registry_locations.push_back(key);
-    }
-
-    // Загрузка путей файловой системы
-    std::string fs_paths = config.getString(version, "FilesystemPaths", "");
-    auto fs_path_list = split(fs_paths, ',');
-    for (auto& path : fs_path_list) {
-      trim(path);
-      if (!path.empty()) {
-        cfg.filesystem_paths.push_back(path);
-      }
-    }
-
-    // Сохраняем конфигурацию
-    configs_[version] = cfg;
-
-    // Логируем результат
-    logger->debug(
-        "Загружена конфигурация для \"{}\": куст реестра \"{}\", {} ключей, {} "
-        "путей ФС",
-        version, cfg.registry_path.empty() ? "по умолчанию" : cfg.registry_path,
-        cfg.registry_locations.size(), cfg.filesystem_paths.size());
+  if (version.empty()) {
+    logger->warn("Версия ОС не указана");
+    return cfg;
   }
+
+  // Загрузка пути к кусту реестра
+  std::string reg_path = config.getString(version, "RegistryPath", "");
+  trim(reg_path);
+  if (!reg_path.empty()) {
+    std::replace(reg_path.begin(), reg_path.end(), '\\', '/');
+    cfg.registry_path = reg_path;
+  }
+
+  // Загрузка ключей реестра
+  std::string reg_keys = config.getString(version, "RegistryKeys", "");
+  auto reg_key_list = split(reg_keys, ',');
+  for (auto& key : reg_key_list) {
+    trim(key);
+    if (key.empty()) continue;
+    std::replace(key.begin(), key.end(), '\\', '/');
+    cfg.registry_locations.push_back(key);
+  }
+
+  // Загрузка путей файловой системы
+  std::string fs_paths = config.getString(version, "FilesystemPaths", "");
+  auto fs_path_list = split(fs_paths, ',');
+  for (auto& path : fs_path_list) {
+    trim(path);
+    if (!path.empty()) {
+      cfg.filesystem_paths.push_back(path);
+    }
+  }
+
+  logger->debug(
+      "Загружена конфигурация для \"{}\": куст реестра \"{}\", {} ключей, {} "
+      "путей ФС",
+      version, cfg.registry_path.empty() ? "по умолчанию" : cfg.registry_path,
+      cfg.registry_locations.size(), cfg.filesystem_paths.size());
+
+  return cfg;
 }
 
 std::vector<AutorunEntry> AutorunAnalyzer::collect(
     const std::string& disk_root) {
   std::vector<AutorunEntry> results;
   const auto logger = GlobalLogger::get();
-
-  // Проверяем наличие конфигурации для версии ОС
-  if (!configs_.contains(os_version_)) {
-    logger->warn("Отсутствует конфигурация автозапуска для версии ОС: {}",
-                 os_version_);
-    return results;
-  }
 
   // Анализ реестра
   auto registry_entries = analyzeRegistry(disk_root);
@@ -100,24 +88,22 @@ std::vector<AutorunEntry> AutorunAnalyzer::collect(
 std::vector<AutorunEntry> AutorunAnalyzer::analyzeRegistry(
     const std::string& disk_root) {
   std::vector<AutorunEntry> entries;
-  const auto& cfg = configs_[os_version_];
   const auto logger = GlobalLogger::get();
 
   // Проверка доступности пути к кусту реестра
-  if (cfg.registry_path.empty()) {
-    logger->warn("Для версии \"{}\" не указан путь к кусту реестра",
-                 os_version_);
+  if (config_.registry_path.empty()) {
+    logger->warn("Не указан путь к кусту реестра");
     return entries;
   }
 
-  const std::string full_reg_path = disk_root + cfg.registry_path;
+  const std::string full_reg_path = disk_root + config_.registry_path;
   if (!std::filesystem::exists(full_reg_path)) {
     logger->warn("Файл куста реестра не найден: \"{}\"", full_reg_path);
     return entries;
   }
 
   // Обработка всех ключей реестра
-  for (const auto& location : cfg.registry_locations) {
+  for (const auto& location : config_.registry_locations) {
     try {
       auto values = parser_->getKeyValues(full_reg_path, location);
       for (const auto& value : values) {
@@ -154,10 +140,9 @@ std::vector<AutorunEntry> AutorunAnalyzer::analyzeRegistry(
 std::vector<AutorunEntry> AutorunAnalyzer::analyzeFilesystem(
     const std::string& disk_root) {
   std::vector<AutorunEntry> entries;
-  const auto& cfg = configs_[os_version_];
   const auto logger = GlobalLogger::get();
 
-  for (const auto& path : cfg.filesystem_paths) {
+  for (const auto& path : config_.filesystem_paths) {
     try {
       if (path.find('*') != std::string::npos) {
         processWildcardPath(disk_root, path, entries);

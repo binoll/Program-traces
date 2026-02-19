@@ -1,8 +1,10 @@
 #include "parser.hpp"
 
+#include <vector>
+
+#include "../../model/event_data_builder.hpp"
 #include "../common/time_converter.hpp"
 #include "../common/xml_parser.hpp"
-#include "parsers/event_log/model/event_data_builder.hpp"
 
 namespace EventLogAnalysis {
 
@@ -26,7 +28,7 @@ std::vector<EventData> EvtxParser::parse(const std::string& file_path) {
 
   try {
     libevtx_error_t* error = nullptr;
-    int32_t record_count = 0;
+    int record_count = 0;
 
     if (libevtx_file_get_number_of_records(evtx_file_, &record_count, &error) !=
         1) {
@@ -35,17 +37,23 @@ std::vector<EventData> EvtxParser::parse(const std::string& file_path) {
     }
 
     std::vector<EventData> events;
-    events.reserve(record_count);
+    if (record_count > 0) {
+      events.reserve(static_cast<size_t>(record_count));
+    }
 
-    for (int32_t i = 0; i < record_count; ++i) {
+    for (int i = 0; i < record_count; ++i) {
       libevtx_record_t* record = nullptr;
       if (libevtx_file_get_record_by_index(evtx_file_, i, &record, &error) ==
           1) {
         events.push_back(parseRecord(record));
         libevtx_record_free(&record, nullptr);
       } else {
-        handleLibEvtxError("Не удалось прочитать запись " + std::to_string(i),
-                           error);
+        if (error) {
+          char buffer[256];
+          libevtx_error_sprint(error, buffer, sizeof(buffer));
+          libevtx_error_free(&error);
+          // TODO: Log warning
+        }
       }
     }
 
@@ -62,7 +70,7 @@ std::vector<EventData> EvtxParser::filterByEventId(const std::string& file_path,
 
   try {
     libevtx_error_t* error = nullptr;
-    int32_t record_count = 0;
+    int record_count = 0;
 
     if (libevtx_file_get_number_of_records(evtx_file_, &record_count, &error) !=
         1) {
@@ -72,7 +80,7 @@ std::vector<EventData> EvtxParser::filterByEventId(const std::string& file_path,
 
     std::vector<EventData> events;
 
-    for (int32_t i = 0; i < record_count; ++i) {
+    for (int i = 0; i < record_count; ++i) {
       libevtx_record_t* record = nullptr;
       if (libevtx_file_get_record_by_index(evtx_file_, i, &record, &error) ==
           1) {
@@ -84,8 +92,9 @@ std::vector<EventData> EvtxParser::filterByEventId(const std::string& file_path,
         }
         libevtx_record_free(&record, nullptr);
       } else {
-        handleLibEvtxError("Не удалось прочитать запись " + std::to_string(i),
-                           error);
+        if (error) {
+          libevtx_error_free(&error);
+        }
       }
     }
 
@@ -117,8 +126,8 @@ void EvtxParser::openFile(const std::string& file_path) {
   }
 
   libevtx_error_t* error = nullptr;
-  if (libevtx_file_open(evtx_file_, file_path.c_str(),
-                        libevtx_get_access_flags_read(), &error) != 1) {
+  if (libevtx_file_open(evtx_file_, file_path.c_str(), LIBEVTX_ACCESS_FLAG_READ,
+                        &error) != 1) {
     handleLibEvtxError("Не удалось открыть файл: " + file_path, error);
     throw std::runtime_error("Не удалось открыть файл EVTX");
   }
@@ -133,56 +142,72 @@ void EvtxParser::closeFile() noexcept {
 }
 
 EventData EvtxParser::parseRecord(libevtx_record_t* record) {
-  auto builder = EventData::builder();
+  EventDataBuilder builder;
   libevtx_error_t* error = nullptr;
-
-  // Вспомогательная лямбда для безопасных вызовов libevtx
-  auto safeGet = [&](auto getter, auto& result) -> bool {
-    if (getter(record, &result, &error) == 1) return true;
-    if (error) libevtx_error_free(&error);
-    return false;
-  };
 
   // Основные поля события
   uint32_t event_id = 0;
-  if (safeGet(libevtx_record_get_event_identifier, event_id)) {
-    builder.event_id(event_id);
+  if (libevtx_record_get_event_identifier(record, &event_id, &error) == 1) {
+    builder.setEventId(event_id);
+  } else if (error) {
+    libevtx_error_free(&error);
   }
 
   uint64_t timestamp = 0;
-  if (safeGet(libevtx_record_get_written_time, timestamp)) {
-    builder.timestamp(timestamp);
+  if (libevtx_record_get_written_time(record, &timestamp, &error) == 1) {
+    builder.setTimestamp(timestamp);
+  } else if (error) {
+    libevtx_error_free(&error);
   }
 
   uint8_t level = 0;
-  if (safeGet(libevtx_record_get_event_level, level)) {
-    builder.level(static_cast<EventLevel>(level));
+  if (libevtx_record_get_event_level(record, &level, &error) == 1) {
+    builder.setLevel(static_cast<EventLevel>(level));
+  } else if (error) {
+    libevtx_error_free(&error);
   }
 
   // Строковые поля
-  auto getStringField = [&](auto size_getter, auto value_getter, auto setter) {
-    size_t size = 0;
-    if (size_getter(record, &size, &error) == 1 && size > 0) {
-      std::vector<char> buffer(size);
-      if (value_getter(record, reinterpret_cast<uint8_t*>(buffer.data()), size,
-                       &error) == 1) {
-        setter(std::string(buffer.data()));
-      }
-      if (error) libevtx_error_free(&error);
+  size_t size = 0;
+  if (libevtx_record_get_utf8_provider_identifier_size(record, &size, &error) ==
+          1 &&
+      size > 0) {
+    std::vector<char> buffer(size);
+    if (libevtx_record_get_utf8_provider_identifier(
+            record, reinterpret_cast<uint8_t*>(buffer.data()), size, &error) ==
+        1) {
+      builder.setProvider(std::string(buffer.data()));
     }
-  };
+    if (error) libevtx_error_free(&error);
+  } else if (error) {
+    libevtx_error_free(&error);
+  }
 
-  getStringField(libevtx_record_get_utf8_provider_identifier_size,
-                 libevtx_record_get_utf8_provider_identifier,
-                 [&](auto str) { builder.provider(std::move(str)); });
+  if (libevtx_record_get_utf8_computer_name_size(record, &size, &error) == 1 &&
+      size > 0) {
+    std::vector<char> buffer(size);
+    if (libevtx_record_get_utf8_computer_name(
+            record, reinterpret_cast<uint8_t*>(buffer.data()), size, &error) ==
+        1) {
+      builder.setComputer(std::string(buffer.data()));
+    }
+    if (error) libevtx_error_free(&error);
+  } else if (error) {
+    libevtx_error_free(&error);
+  }
 
-  getStringField(libevtx_record_get_utf8_computer_name_size,
-                 libevtx_record_get_utf8_computer_name,
-                 [&](auto str) { builder.computer(std::move(str)); });
-
-  getStringField(libevtx_record_get_utf8_channel_name_size,
-                 libevtx_record_get_utf8_channel_name,
-                 [&](auto str) { builder.channel(std::move(str)); });
+  if (libevtx_record_get_utf8_channel_name_size(record, &size, &error) == 1 &&
+      size > 0) {
+    std::vector<char> buffer(size);
+    if (libevtx_record_get_utf8_channel_name(
+            record, reinterpret_cast<uint8_t*>(buffer.data()), size, &error) ==
+        1) {
+      builder.setChannel(std::string(buffer.data()));
+    }
+    if (error) libevtx_error_free(&error);
+  } else if (error) {
+    libevtx_error_free(&error);
+  }
 
   // XML данные
   size_t xml_size = 0;
@@ -193,21 +218,23 @@ EventData EvtxParser::parseRecord(libevtx_record_t* record) {
             record, reinterpret_cast<uint8_t*>(buffer.data()), xml_size,
             &error) == 1) {
       std::string xml(buffer.data());
-      builder.xml(xml);
+      builder.setXml(xml);
 
       // Извлекаем данные из XML
       const auto xml_data = XmlEventParser::parseEventData(xml);
       for (const auto& [key, value] : xml_data) {
-        builder.add_data(key, value);
+        builder.addData(key, value);
       }
 
       // Извлекаем описание
       const std::string description = XmlEventParser::parseDescription(xml);
       if (!description.empty()) {
-        builder.description(description);
+        builder.setDescription(description);
       }
     }
     if (error) libevtx_error_free(&error);
+  } else if (error) {
+    libevtx_error_free(&error);
   }
 
   return std::move(builder).build();

@@ -35,7 +35,7 @@ std::vector<std::unique_ptr<IRegistryData>> RegistryParser::getKeyValues(
   std::vector<std::unique_ptr<IRegistryData>> results;
 
   // Получаем количество значений в ключе
-  int32_t value_count = 0;
+  int value_count = 0;
   if (libregf_key_get_number_of_values(key_handle.getPtr(), &value_count,
                                        nullptr) != 1) {
     logger->debug("Не удалось получить количество значений для ключа: \"{}\"",

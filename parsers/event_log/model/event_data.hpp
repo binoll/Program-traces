@@ -39,80 +39,76 @@ class EventData {
 
   /// @brief Возвращает числовой идентификатор события
   /// @return Числовой идентификатор события (Event ID)
-  [[nodiscard]] uint32_t event_id() const noexcept;
+  [[nodiscard]] uint32_t getEventId() const noexcept;
 
   /// @brief Возвращает временную метку в формате Windows FILETIME
   /// @return Временная метка в 100-наносекундных интервалах с 1 января 1601
   /// года
-  [[nodiscard]] uint64_t timestamp() const noexcept;
+  [[nodiscard]] uint64_t getTimestamp() const noexcept;
 
   /// @brief Возвращает уровень важности события
   /// @return Уровень важности события из перечисления EventLevel
-  [[nodiscard]] EventLevel level() const noexcept;
+  [[nodiscard]] EventLevel getLevel() const noexcept;
 
   /// @brief Возвращает имя провайдера события
   /// @return Константная ссылка на строку с именем провайдера (источника)
   /// события
-  [[nodiscard]] const std::string& provider() const noexcept;
+  [[nodiscard]] const std::string& getProvider() const noexcept;
 
   /// @brief Возвращает имя компьютера
   /// @return Константная ссылка на строку с именем компьютера, где произошло
   /// событие
-  [[nodiscard]] const std::string& computer() const noexcept;
+  [[nodiscard]] const std::string& getComputer() const noexcept;
 
   /// @brief Возвращает канал журнала событий
   /// @return Константная ссылка на строку с именем канала журнала событий
-  [[nodiscard]] const std::string& channel() const noexcept;
+  [[nodiscard]] const std::string& getChannel() const noexcept;
 
   /// @brief Возвращает текстовое описание события
   /// @return Константная ссылка на строку с текстовым описанием события
-  [[nodiscard]] const std::string& description() const noexcept;
+  [[nodiscard]] const std::string& getDescription() const noexcept;
 
   /// @brief Возвращает XML-представление события
   /// @return Константная ссылка на строку с полным XML-представлением события
-  [[nodiscard]] const std::string& xml() const noexcept;
+  [[nodiscard]] const std::string& getXml() const noexcept;
 
   /// @brief Возвращает SID пользователя
   /// @return Константная ссылка на строку с Security Identifier пользователя
-  [[nodiscard]] const std::string& user_sid() const noexcept;
+  [[nodiscard]] const std::string& getUserSid() const noexcept;
 
   /// @brief Возвращает бинарные данные события
   /// @return Константная ссылка на вектор с бинарными данными события
-  [[nodiscard]] const std::vector<uint8_t>& binary_data() const noexcept;
+  [[nodiscard]] const std::vector<uint8_t>& getBinaryData() const noexcept;
 
   /// @brief Возвращает словарь дополнительных данных
   /// @return Константная ссылка на словарь с дополнительными параметрами
   /// события
-  [[nodiscard]] const std::unordered_map<std::string, std::string>& data()
+  [[nodiscard]] const std::unordered_map<std::string, std::string>& getData()
       const noexcept;
 
   /// @brief Ищет дополнительное поле данных по ключу
   /// @param[in] key Ключ для поиска в дополнительных данных
   /// @return Optional с значением поля или std::nullopt если поле не найдено
-  [[nodiscard]] std::optional<std::string_view> get_data_field(
+  [[nodiscard]] std::optional<std::string_view> getDataField(
       std::string_view key) const;
 
   /// @brief Преобразует Windows FILETIME в стандартную временную точку
   /// @return Временная точка std::chrono::system_clock
   /// @note Возвращает нулевую временную точку при некорректном timestamp
-  [[nodiscard]] std::chrono::system_clock::time_point system_timepoint()
+  [[nodiscard]] std::chrono::system_clock::time_point getSystemTimepoint()
       const noexcept;
 
   /// @brief Проверяет, является ли событие ошибкой или критическим
   /// @return true если уровень события Error или Critical
-  [[nodiscard]] bool is_error() const noexcept;
+  [[nodiscard]] bool isError() const noexcept;
 
   /// @brief Проверяет, является ли событие предупреждением
   /// @return true если уровень события Warning
-  [[nodiscard]] bool is_warning() const noexcept;
+  [[nodiscard]] bool isWarning() const noexcept;
 
   /// @brief Проверяет, является ли событие информационным
   /// @return true если уровень события Info или Verbose
-  [[nodiscard]] bool is_info() const noexcept;
-
-  /// @brief Создает построитель для нового события
-  /// @return Объект EventDataBuilder для пошагового конструирования события
-  [[nodiscard]] static EventDataBuilder builder() noexcept;
+  [[nodiscard]] bool isInfo() const noexcept;
 
  private:
   friend class EventDataBuilder;  ///< Дружественный доступ для построителя

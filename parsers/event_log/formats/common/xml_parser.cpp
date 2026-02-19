@@ -2,30 +2,19 @@
 
 namespace EventLogAnalysis {
 
-const std::regex XmlEventParser::DATA_REGEX(
-    R"(<Data\s+Name="([^"]+)\"[^>]*>([^<]*)</Data>)");
-const std::regex XmlEventParser::DESC_REGEX(
-    R"(<Description>([^<]+)</Description>)");
-
-const std::unordered_map<std::string, std::string>
-    XmlEventParser::XML_ENTITIES = {{"&amp;", "&"},
-                                    {"&lt;", "<"},
-                                    {"&gt;", ">"},
-                                    {"&quot;", "\""},
-                                    {"&apos;", "'"}};
-
 std::unordered_map<std::string, std::string> XmlEventParser::parseEventData(
     const std::string& xml) {
   std::unordered_map<std::string, std::string> result;
 
   try {
-    std::sregex_iterator it(xml.begin(), xml.end(), DATA_REGEX);
-    std::sregex_iterator end;
+    auto it = std::sregex_iterator(xml.begin(), xml.end(), DATA_REGEX);
 
-    for (; it != end; ++it) {
-      std::string name = (*it)[1].str();
-      std::string value = decodeXmlEntities((*it)[2].str());
-      result.emplace(std::move(name), std::move(value));
+    for (auto end = std::sregex_iterator(); it != end; ++it) {
+      if (const std::smatch& match = *it; match.size() == 3) {
+        std::string name = match[1].str();
+        std::string value = decodeXmlEntities(match[2].str());
+        result.emplace(std::move(name), std::move(value));
+      }
     }
   } catch (const std::regex_error&) {
     // Игнорируем ошибки regex
@@ -48,10 +37,11 @@ std::string XmlEventParser::parseDescription(const std::string& xml) {
 }
 
 std::string XmlEventParser::decodeXmlEntities(std::string text) {
-  for (const auto& entity : XML_ENTITIES) {
+  for (const auto& [entity, replacement] : XML_ENTITIES) {
     size_t pos = 0;
-    while ((pos = text.find(entity.first, pos)) != std::string::npos) {
-      text.replace(pos, entity.first.length(), entity.second);
+    while ((pos = text.find(entity, pos)) != std::string::npos) {
+      text.replace(pos, entity.length(), replacement);
+      pos += replacement.length();
     }
   }
   return text;

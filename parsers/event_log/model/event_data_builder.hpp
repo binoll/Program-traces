@@ -28,114 +28,114 @@ class EventDataBuilder {
   /// @brief Устанавливает идентификатор события (lvalue-версия)
   /// @param[in] id Числовой идентификатор события
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& event_id(uint32_t id) & noexcept;
+  EventDataBuilder& setEventId(uint32_t id) & noexcept;
 
   /// @brief Устанавливает идентификатор события (rvalue-версия)
   /// @param[in] id Числовой идентификатор события
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& event_id(uint32_t id) && noexcept;
+  EventDataBuilder&& setEventId(uint32_t id) && noexcept;
 
   /// @brief Устанавливает временную метку события (lvalue-версия)
   /// @param[in] timestamp Временная метка в формате Windows FILETIME
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& timestamp(uint64_t timestamp) & noexcept;
+  EventDataBuilder& setTimestamp(uint64_t timestamp) & noexcept;
 
   /// @brief Устанавливает временную метку события (rvalue-версия)
   /// @param[in] timestamp Временная метка в формате Windows FILETIME
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& timestamp(uint64_t timestamp) && noexcept;
+  EventDataBuilder&& setTimestamp(uint64_t timestamp) && noexcept;
 
   /// @brief Устанавливает уровень важности события (lvalue-версия)
   /// @param[in] level Уровень важности события
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& level(EventLevel level) & noexcept;
+  EventDataBuilder& setLevel(EventLevel level) & noexcept;
 
   /// @brief Устанавливает уровень важности события (rvalue-версия)
   /// @param[in] level Уровень важности события
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& level(EventLevel level) && noexcept;
+  EventDataBuilder&& setLevel(EventLevel level) && noexcept;
 
   /// @brief Устанавливает провайдера события (lvalue-версия)
   /// @param[in] provider Имя провайдера события
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& provider(std::string provider) &;
+  EventDataBuilder& setProvider(std::string provider) &;
 
   /// @brief Устанавливает провайдера события (rvalue-версия)
   /// @param[in] provider Имя провайдера события
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& provider(std::string provider) &&;
+  EventDataBuilder&& setProvider(std::string provider) &&;
 
   /// @brief Устанавливает имя компьютера (lvalue-версия)
   /// @param[in] computer Имя компьютера
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& computer(std::string computer) &;
+  EventDataBuilder& setComputer(std::string computer) &;
 
   /// @brief Устанавливает имя компьютера (rvalue-версия)
   /// @param[in] computer Имя компьютера
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& computer(std::string computer) &&;
+  EventDataBuilder&& setComputer(std::string computer) &&;
 
   /// @brief Устанавливает канал журнала (lvalue-версия)
   /// @param[in] channel Канал журнала событий
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& channel(std::string channel) &;
+  EventDataBuilder& setChannel(std::string channel) &;
 
   /// @brief Устанавливает канал журнала (rvalue-версия)
   /// @param[in] channel Канал журнала событий
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& channel(std::string channel) &&;
+  EventDataBuilder&& setChannel(std::string channel) &&;
 
   /// @brief Устанавливает описание события (lvalue-версия)
   /// @param[in] description Текстовое описание события
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& description(std::string description) &;
+  EventDataBuilder& setDescription(std::string description) &;
 
   /// @brief Устанавливает описание события (rvalue-версия)
   /// @param[in] description Текстовое описание события
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& description(std::string description) &&;
+  EventDataBuilder&& setDescription(std::string description) &&;
 
   /// @brief Устанавливает XML-представление события (lvalue-версия)
   /// @param[in] xml XML-представление события
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& xml(std::string xml) &;
+  EventDataBuilder& setXml(std::string xml) &;
 
   /// @brief Устанавливает XML-представление события (rvalue-версия)
   /// @param[in] xml XML-представление события
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& xml(std::string xml) &&;
+  EventDataBuilder&& setXml(std::string xml) &&;
 
   /// @brief Устанавливает SID пользователя (lvalue-версия)
   /// @param[in] sid SID пользователя
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& user_sid(std::string sid) &;
+  EventDataBuilder& setUserSid(std::string sid) &;
 
   /// @brief Устанавливает SID пользователя (rvalue-версия)
   /// @param[in] sid SID пользователя
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& user_sid(std::string sid) &&;
+  EventDataBuilder&& setUserSid(std::string sid) &&;
 
   /// @brief Устанавливает бинарные данные события (lvalue-версия)
   /// @param[in] data Бинарные данные события
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& binary_data(std::vector<uint8_t> data) &;
+  EventDataBuilder& setBinaryData(std::vector<uint8_t> data) &;
 
   /// @brief Устанавливает бинарные данные события (rvalue-версия)
   /// @param[in] data Бинарные данные события
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& binary_data(std::vector<uint8_t> data) &&;
+  EventDataBuilder&& setBinaryData(std::vector<uint8_t> data) &&;
 
   /// @brief Добавляет дополнительное поле данных (lvalue-версия)
   /// @param[in] key Ключ дополнительного поля
   /// @param[in] value Значение дополнительного поля
   /// @return Ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder& add_data(std::string key, std::string value) &;
+  EventDataBuilder& addData(std::string key, std::string value) &;
 
   /// @brief Добавляет дополнительное поле данных (rvalue-версия)
   /// @param[in] key Ключ дополнительного поля
   /// @param[in] value Значение дополнительного поля
   /// @return Rvalue-ссылка на текущий построитель для цепочки вызовов
-  EventDataBuilder&& add_data(std::string key, std::string value) &&;
+  EventDataBuilder&& addData(std::string key, std::string value) &&;
 
   /// @brief Строит итоговый объект EventData
   /// @return Неизменяемый объект EventData
@@ -147,7 +147,7 @@ class EventDataBuilder {
   /// @return true если все обязательные поля установлены корректно
   /// @details Обязательные поля: timestamp > 0, provider не пустой, channel не
   /// пустой
-  [[nodiscard]] bool is_valid() const noexcept;
+  [[nodiscard]] bool isValid() const noexcept;
 
  private:
   uint32_t event_id_ = 0;   ///< Числовой идентификатор события

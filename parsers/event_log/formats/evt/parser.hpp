@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "../../interfaces/iparser.hpp"
-#include "../../model/event_data.hpp"
+#include "../../../event_log/interfaces/iparser.hpp"
+#include "../../../event_log/model/event_data.hpp"
 
 /// @namespace EventLogAnalysis
 /// @brief Пространство имен для работы с журналами событий Windows

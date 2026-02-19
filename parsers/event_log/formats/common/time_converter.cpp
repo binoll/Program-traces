@@ -2,34 +2,44 @@
 
 namespace EventLogAnalysis {
 
-inline std::chrono::system_clock::time_point
-TimeConverter::filetimeToSystemTime(uint64_t filetime) {
-  if (filetime <= FILETIME_EPOCH_DIFFERENCE) {
-    return std::chrono::system_clock::time_point{};
+std::chrono::system_clock::time_point TimeConverter::filetimeToSystemTime(
+    uint64_t filetime) {
+  // FILETIME is 100-nanosecond intervals since January 1, 1601 (UTC)
+  // Unix epoch is January 1, 1970 (UTC)
+  // Difference is 116444736000000000 * 100ns
+
+  if (filetime < FILETIME_EPOCH_DIFFERENCE) {
+    // Return epoch if filetime is before epoch (or invalid/zero)
+    return std::chrono::system_clock::from_time_t(0);
   }
 
-  const uint64_t ns_since_epoch =
-      (filetime - FILETIME_EPOCH_DIFFERENCE) * NS_PER_FILETIME_TICK;
-  return std::chrono::system_clock::time_point{
+  uint64_t intervals_since_epoch = filetime - FILETIME_EPOCH_DIFFERENCE;
+  uint64_t ns_since_epoch = intervals_since_epoch * 100;
+
+  auto duration = std::chrono::nanoseconds(ns_since_epoch);
+  return std::chrono::system_clock::time_point(
       std::chrono::duration_cast<std::chrono::system_clock::duration>(
-          std::chrono::nanoseconds(ns_since_epoch))};
+          duration));
 }
 
-inline uint64_t TimeConverter::unixTimeToFiletime(time_t unix_time) {
-  return static_cast<uint64_t>(unix_time) * HUNDRED_NS_PER_SECOND +
-         FILETIME_EPOCH_DIFFERENCE;
+uint64_t TimeConverter::unixTimeToFiletime(time_t unix_time) {
+  uint64_t intervals = static_cast<uint64_t>(unix_time) * 10000000ULL;
+  return intervals + FILETIME_EPOCH_DIFFERENCE;
 }
 
-inline uint64_t TimeConverter::systemTimeToFiletime(
+uint64_t TimeConverter::systemTimeToFiletime(
     const std::chrono::system_clock::time_point& tp) {
-  const auto duration = tp.time_since_epoch();
-  const auto ns =
+  auto duration = tp.time_since_epoch();
+  auto ns =
       std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
-  return ns / NS_PER_FILETIME_TICK + FILETIME_EPOCH_DIFFERENCE;
+
+  // Convert ns to 100-ns intervals
+  uint64_t intervals = ns / 100;
+  return intervals + FILETIME_EPOCH_DIFFERENCE;
 }
 
-inline uint64_t TimeConverter::secondsSince1970ToFiletime(uint64_t seconds) {
-  return seconds * HUNDRED_NS_PER_SECOND + FILETIME_EPOCH_DIFFERENCE;
+uint64_t TimeConverter::secondsSince1970ToFiletime(uint64_t seconds) {
+  return seconds * 10000000ULL + FILETIME_EPOCH_DIFFERENCE;
 }
 
 }

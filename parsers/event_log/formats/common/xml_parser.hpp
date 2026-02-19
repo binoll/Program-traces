@@ -32,12 +32,23 @@ class XmlEventParser {
   static std::string decodeXmlEntities(std::string text);
 
  private:
-  static const std::regex
-      DATA_REGEX;  ///< Регулярное выражение для поиска тегов <Data>
-  static const std::regex
-      DESC_REGEX;  ///< Регулярное выражение для поиска тега <Description>
-  static const std::unordered_map<std::string, std::string>
-      XML_ENTITIES;  ///< Карта XML-сущностей для декодирования
+  inline static const std::regex DATA_REGEX{
+      R"xml(<Data\s+Name="([^"]+)">([^<]*)</Data>)xml"};  ///< Регулярное
+                                                          ///< выражение для
+                                                          ///< поиска тегов
+                                                          ///< <Data>
+
+  inline static const std::regex DESC_REGEX{
+      R"xml(<Description>([^<]+)</Description>)xml"};  ///< Регулярное выражение
+                                                       ///< для поиска тега
+                                                       ///< <Description>
+
+  inline static const std::unordered_map<std::string, std::string> XML_ENTITIES{
+      {"&amp;", "&"},
+      {"&lt;", "<"},
+      {"&gt;", ">"},
+      {"&quot;", "\""},
+      {"&apos;", "'"}};  ///< Карта XML-сущностей для декодирования
 };
 
 }

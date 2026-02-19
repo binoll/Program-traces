@@ -4,43 +4,43 @@
 
 namespace EventLogAnalysis {
 
-uint32_t EventData::event_id() const noexcept { return event_id_; }
+uint32_t EventData::getEventId() const noexcept { return event_id_; }
 
-uint64_t EventData::timestamp() const noexcept { return timestamp_; }
+uint64_t EventData::getTimestamp() const noexcept { return timestamp_; }
 
-EventLevel EventData::level() const noexcept { return level_; }
+EventLevel EventData::getLevel() const noexcept { return level_; }
 
-const std::string& EventData::provider() const noexcept { return provider_; }
+const std::string& EventData::getProvider() const noexcept { return provider_; }
 
-const std::string& EventData::computer() const noexcept { return computer_; }
+const std::string& EventData::getComputer() const noexcept { return computer_; }
 
-const std::string& EventData::channel() const noexcept { return channel_; }
+const std::string& EventData::getChannel() const noexcept { return channel_; }
 
-const std::string& EventData::description() const noexcept {
+const std::string& EventData::getDescription() const noexcept {
   return description_;
 }
 
-const std::string& EventData::xml() const noexcept { return xml_; }
+const std::string& EventData::getXml() const noexcept { return xml_; }
 
-const std::string& EventData::user_sid() const noexcept { return user_sid_; }
+const std::string& EventData::getUserSid() const noexcept { return user_sid_; }
 
-const std::vector<uint8_t>& EventData::binary_data() const noexcept {
+const std::vector<uint8_t>& EventData::getBinaryData() const noexcept {
   return binary_data_;
 }
 
-const std::unordered_map<std::string, std::string>& EventData::data()
+const std::unordered_map<std::string, std::string>& EventData::getData()
     const noexcept {
   return data_;
 }
 
-std::optional<std::string_view> EventData::get_data_field(
+std::optional<std::string_view> EventData::getDataField(
     const std::string_view key) const {
   const auto it = data_.find(std::string(key));
   return it != data_.end() ? std::make_optional(std::string_view(it->second))
                            : std::nullopt;
 }
 
-std::chrono::system_clock::time_point EventData::system_timepoint()
+std::chrono::system_clock::time_point EventData::getSystemTimepoint()
     const noexcept {
   // Константы для преобразования Windows FILETIME
   constexpr uint64_t FILETIME_EPOCH_DIFF =
@@ -59,13 +59,11 @@ std::chrono::system_clock::time_point EventData::system_timepoint()
           std::chrono::nanoseconds(ns_since_epoch))};
 }
 
-bool EventData::is_error() const noexcept { return is_error_level(level_); }
+bool EventData::isError() const noexcept { return is_error_level(level_); }
 
-bool EventData::is_warning() const noexcept { return is_warning_level(level_); }
+bool EventData::isWarning() const noexcept { return is_warning_level(level_); }
 
-bool EventData::is_info() const noexcept { return is_info_level(level_); }
-
-EventDataBuilder EventData::builder() noexcept { return EventDataBuilder{}; }
+bool EventData::isInfo() const noexcept { return is_info_level(level_); }
 
 EventData::EventData(uint32_t event_id, uint64_t timestamp, EventLevel level,
                      std::string provider, std::string computer,
